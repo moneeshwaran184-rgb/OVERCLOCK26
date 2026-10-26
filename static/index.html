@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FixIt — Campus Maintenance Reporting System</title>
-  
-  <!-- Local Offline Tailwind CSS -->
+  <title>CampusOps | CampusOps Engineering College</title>
+
+  <!-- Local Tailwind CSS -->
   <script src="/static/vendor/tailwindcss.js"></script>
   <script>
     tailwind.config = {
@@ -32,1241 +32,1040 @@
       }
     };
 
-    // Automatic Device Theme Controller (prefers-color-scheme)
+    // Dark/Light Theme Controller
     (function() {
-      function applyDeviceTheme(e) {
-        try {
-          const isDark = e ? e.matches : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-          if (window.Analytics && typeof window.Analytics.updateTheme === 'function') {
-            window.Analytics.updateTheme(isDark);
-          }
-        } catch (err) {}
-      }
-      applyDeviceTheme();
-      if (window.matchMedia) {
-        const query = window.matchMedia('(prefers-color-scheme: dark)');
-        if (query.addEventListener) {
-          query.addEventListener('change', applyDeviceTheme);
-        } else if (query.addListener) {
-          query.addListener(applyDeviceTheme);
-        }
-      }
+      try {
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) document.documentElement.classList.add('dark');
+      } catch (err) {}
     })();
   </script>
 
-  <!-- Local Offline Lucide Icons -->
+  <!-- Lucide Icons -->
   <script src="/static/vendor/lucide.min.js"></script>
-  
-  <!-- Local Offline Chart.js -->
+
+  <!-- Chart.js -->
   <script src="/static/vendor/chart.umd.min.js"></script>
 
   <!-- Custom Styles -->
   <link rel="stylesheet" href="/static/css/custom.css">
+  <link rel="stylesheet" href="/static/css/college-home.css">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col antialiased">
 
   <!-- ================= TOP NAVIGATION BAR ================= -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
+  <header class="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
-        
-        <!-- Brand / Logo (Takes visitors back to homepage) -->
-        <a href="#dashboard" data-tab-target="dashboard" id="fixitLogoHomeLink" class="flex items-center gap-3 cursor-pointer group rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" title="FixIt Campus Portal — Home">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 group-hover:scale-105 group-hover:shadow-indigo-300/50 transition-all">
-            <i data-lucide="shield-check" class="w-6 h-6"></i>
+
+        <!-- Brand / Logo -->
+        <a href="#dashboard" data-tab-target="dashboard" class="flex items-center gap-3 cursor-pointer group rounded-xl focus:outline-none" title="CampusOps Home">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-200/50 group-hover:scale-105 transition-all">
+            <i data-lucide="layers" class="w-5 h-5"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-extrabold text-xl text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">Fix<span class="text-indigo-600">It</span></span>
-              <span class="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/60">Campus Portal</span>
+              <span class="font-extrabold text-xl text-slate-900 dark:text-white tracking-tight group-hover:text-indigo-600 transition-colors">Campus<span class="text-indigo-600">Ops</span></span>
+              <span class="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">COPS01</span>
             </div>
-            <p class="text-[11px] text-slate-500 hidden md:block">Maintenance Reporting & Issue Tracking</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden md:block">Campus Operations & Maintenance Platform</p>
           </div>
         </a>
 
-        <!-- Desktop Navigation Tabs -->
-        <nav class="hidden md:flex items-center gap-1">
-          <button data-tab-target="dashboard" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 bg-indigo-50 text-indigo-600 font-semibold">
-            <i data-lucide="layout-grid" class="w-4 h-4"></i>
-            Campus Feed
-          </button>
-          <button data-tab-target="report" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            Report an Issue
-          </button>
-          <button data-tab-target="myreports" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
-            <i data-lucide="list" class="w-4 h-4"></i>
-            My Reports
-          </button>
-          <button data-tab-target="admin" class="hidden px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
-            <i data-lucide="wrench" class="w-4 h-4"></i>
-            Admin Management
-          </button>
-          <button data-tab-target="analytics" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
-            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-            Resolution Stats
-          </button>
+        <!-- Dynamic Desktop Navigation (Rendered by App.renderNavTabs based on Role) -->
+        <nav id="desktopNav" class="hidden md:flex items-center gap-1">
+          <!-- Populated dynamically via App.js -->
         </nav>
 
-        <!-- Right: Auth, Status Badge & Mobile Menu Trigger -->
+        <!-- Right Action Section -->
         <div class="flex items-center gap-2.5">
-          <!-- Student / Admin Supabase Auth Section -->
+          <!-- Role Indicator Badge -->
+          <div id="roleIndicatorBadge" class="hidden sm:flex px-2.5 py-1 rounded-xl text-[11px] font-bold items-center gap-1.5">
+            <span id="roleIndicator">Public</span>
+          </div>
+
+          <!-- Unread Notifications Icon -->
+          <button id="notificationNavButton" onclick="App.switchTab('notifications')" class="hidden relative p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Notifications">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="unreadNotificationsBadge" class="hidden absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+          </button>
+
+          <!-- Auth Status / Sign In / Sign Out Section -->
           <div id="authNavSection" class="flex items-center gap-2">
-            <!-- Signed-out state: Single clear Sign In button -->
-            <button id="authModalOpenBtn" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition">
+            <!-- Signed-out trigger -->
+            <button id="authModalOpenBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">
               Sign In
             </button>
 
-            <!-- Signed-in state: User name display (does NOT open sign-in screen) + Clear Log Out button -->
+            <!-- Signed-in display -->
             <div id="authSignedInGroup" class="hidden flex items-center gap-2">
-              <div id="authAccountDisplay" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 select-none cursor-default">
+              <div class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1.5">
                 <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-500"></i>
-                <span id="authUserName">User</span>
+                <span id="authUserName" class="max-w-[120px] truncate">User</span>
               </div>
-              <button id="authSignOutBtn" type="button" class="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 text-xs font-semibold transition" title="Log Out">
-                Log Out
+              <button id="authSignOutBtn" type="button" class="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-semibold transition" title="Log Out">
+                Sign Out
               </button>
             </div>
           </div>
 
-          <!-- Role Indicator Badge (Displays actual authenticated status) -->
-          <div id="roleIndicatorBadge" class="hidden sm:flex px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-600 items-center gap-1.5">
-            <span id="roleIndicator">Public Viewer</span>
-          </div>
-
           <!-- Mobile Hamburger -->
-          <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100">
+          <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
             <i data-lucide="menu" class="w-6 h-6"></i>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Mobile Nav Collapsible -->
-    <div id="mobileNav" class="hidden md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg">
-      <button data-tab-target="dashboard" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-        <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-600"></i>
-        Campus Feed
-      </button>
-      <button data-tab-target="report" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-        <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i>
-        Report an Issue
-      </button>
-      <button data-tab-target="myreports" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-        <i data-lucide="list" class="w-4 h-4 text-indigo-600"></i>
-        My Reports
-      </button>
-      <button data-tab-target="admin" class="hidden w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-        <i data-lucide="wrench" class="w-4 h-4 text-indigo-600"></i>
-        Admin Management
-      </button>
-      <button data-tab-target="analytics" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 text-slate-700 hover:bg-slate-50">
-        <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
-        Resolution Stats
-      </button>
+    <!-- Mobile Nav Drawer -->
+    <div id="mobileNav" class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
+      <div id="mobileNavList" class="space-y-1"></div>
     </div>
   </header>
 
-  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <!-- ================= MAIN CONTENT WRAPPER ================= -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <!-- ================= TAB 1: USER DASHBOARD ================= -->
-    <section id="section-dashboard" class="tab-section space-y-8 relative">
-
-      <!-- Hero Banner -->
-      <div id="homepageHeroBanner" class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden shadow-2xl border border-indigo-900/40">
-
-        <!-- Drone flyover canvas – confined strictly to the hero banner -->
-        <canvas id="heroFrameCanvas" class="hero-scroll-canvas" aria-hidden="true"></canvas>
-
-        <!-- Foreground Hero Content -->
-        <div class="hero-content-layer max-w-2xl">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-indigo-200 mb-4 shadow-sm">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-300"></i>
-            Privacy-First & Intelligent Maintenance
-          </div>
-          <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-3 drop-shadow-sm">
-            Campus Maintenance Made Transparent.
-          </h1>
-          <p class="text-sm sm:text-base text-slate-200 leading-relaxed mb-6 font-normal">
-            Report electrical sparks, water leakage, broken furniture, and classroom equipment issues. FixIt intelligently analyzes severity, prevents duplicate tickets, and shields student identity.
-          </p>
-          <div class="flex flex-wrap items-center gap-3">
-            <button data-tab-target="report" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/40 transition flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              Report an Issue
-            </button>
-            <button data-tab-target="analytics" class="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm backdrop-blur-md border border-white/20 transition flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
-              <i data-lucide="line-chart" class="w-4 h-4 text-indigo-300"></i>
-              View Resolution Stats
-            </button>
-          </div>
-        </div>
-
-        <!-- Ambient glow effects -->
-        <div class="absolute -right-12 -bottom-12 w-80 h-80 rounded-full bg-indigo-600/15 blur-3xl pointer-events-none z-0"></div>
-        <div class="absolute right-24 top-6 w-48 h-48 rounded-full bg-indigo-400/10 blur-2xl pointer-events-none z-0"></div>
+    <!-- 1. DYNAMIC ROLE DASHBOARD SECTION -->
+    <section id="section-dashboard" class="tab-section">
+      <div id="dashboardContentContainer">
+        <!-- Rendered dynamically by Dashboard.js -->
       </div>
-
-      <!-- Quick Summary Stats Cards -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Open Tickets -->
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <i data-lucide="alert-circle" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div id="statTotalOpen" class="text-xl sm:text-2xl font-bold text-slate-900">—</div>
-            <div class="text-xs text-slate-500 font-medium">Active Issues</div>
-          </div>
-        </div>
-
-        <!-- Submitted -->
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-            <i data-lucide="clock" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div id="statPending" class="text-xl sm:text-2xl font-bold text-slate-900">—</div>
-            <div class="text-xs text-slate-500 font-medium">Submitted</div>
-          </div>
-        </div>
-
-        <!-- In Progress -->
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <i data-lucide="wrench" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div id="statInProgress" class="text-xl sm:text-2xl font-bold text-slate-900">—</div>
-            <div class="text-xs text-slate-500 font-medium">In Progress</div>
-          </div>
-        </div>
-
-        <!-- Resolved -->
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <div id="statResolved" class="text-xl sm:text-2xl font-bold text-slate-900">—</div>
-            <div class="text-xs text-slate-500 font-medium">Resolved</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Search and Filter Bar -->
-      <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-        
-        <!-- Search Input -->
-        <div class="relative">
-          <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
-          <input 
-            type="text" 
-            id="dashboardSearch" 
-            placeholder="Search by Issue ID (e.g. FIX-1042), problem keyword, building, or room..." 
-            class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
-          >
-        </div>
-
-        <!-- Filter Pills & Dropdown -->
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
-          
-          <!-- Status Pills -->
-          <div class="flex items-center gap-1.5 flex-wrap text-xs">
-            <span class="text-slate-400 font-semibold mr-1">Status:</span>
-            <button data-filter-status="" class="px-3 py-1.5 rounded-xl font-medium transition bg-slate-900 text-white shadow-sm">All</button>
-            <button data-filter-status="Submitted" class="px-3 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">Submitted</button>
-            <button data-filter-status="In Progress" class="px-3 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">In Progress</button>
-            <button data-filter-status="Resolved" class="px-3 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">Resolved</button>
-          </div>
-
-          <!-- Priority Pills -->
-          <div class="flex items-center gap-1.5 flex-wrap text-xs">
-            <span class="text-slate-400 font-semibold mr-1">Priority:</span>
-            <button data-filter-priority="" class="px-3 py-1.5 rounded-xl font-medium transition bg-slate-900 text-white shadow-sm">All</button>
-            <button data-filter-priority="Critical" class="px-2.5 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">🚨 Critical</button>
-            <button data-filter-priority="High" class="px-2.5 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">🔴 High</button>
-            <button data-filter-priority="Medium" class="px-2.5 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">🟠 Medium</button>
-            <button data-filter-priority="Low" class="px-2.5 py-1.5 rounded-xl font-medium transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">🟢 Low</button>
-          </div>
-
-          <!-- Category Select & Reset -->
-          <div class="flex items-center gap-2">
-            <select id="filterCategory" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="">All Categories</option>
-              <option value="Electrical">Electrical</option>
-              <option value="Plumbing">Plumbing</option>
-              <option value="Furniture">Furniture</option>
-              <option value="Cleaning">Cleaning</option>
-              <option value="Classroom">Classroom</option>
-              <option value="Internet/Network">Internet/Network</option>
-              <option value="Security">Security</option>
-              <option value="Infrastructure">Infrastructure</option>
-              <option value="Other">Other</option>
-            </select>
-
-            <button id="clearFiltersBtn" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl border border-slate-200 font-medium transition">
-              Reset
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Feed Header / Count -->
-      <div class="flex items-center justify-between">
-        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span>Reported Campus Issues</span>
-          <span id="resultsCountLabel" class="text-xs font-normal text-slate-500">Loading issues...</span>
-        </h2>
-        <span class="text-xs text-slate-400">Click any card to view timeline & proof</span>
-      </div>
-
-      <!-- Issues Cards Grid -->
-      <div id="issuesGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <!-- Rendered dynamically by dashboard.js -->
-      </div>
-
     </section>
 
-    <!-- ================= MY REPORTS TAB ================= -->
-    <section id="section-myreports" class="tab-section hidden space-y-8">
-
-      <!-- Page Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <i data-lucide="list" class="w-5 h-5 text-indigo-600"></i>
-            My Reports
-          </h2>
-          <p class="text-sm text-slate-500 mt-0.5">Reports you personally submitted</p>
-        </div>
-        <button data-tab-target="report" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 shadow-sm">
-          <i data-lucide="plus" class="w-4 h-4"></i> New Report
-        </button>
-      </div>
-
-      <!-- Sign-in prompt (shown when signed out) -->
-      <div id="myreportsSigninPrompt" class="hidden bg-white rounded-2xl border border-dashed border-slate-200 py-16 px-4 text-center">
-        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <i data-lucide="log-in" class="w-7 h-7"></i>
-        </div>
-        <h3 class="text-base font-semibold text-slate-800 mb-1">Sign in to view your reports</h3>
-        <p class="text-sm text-slate-500 mb-5">You need to be signed in with a student account to see your personal reports.</p>
-        <button id="myreportsSigninBtn" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl transition">
-          Sign In
-        </button>
-      </div>
-
-      <!-- Reports grid (shown when signed in) -->
-      <div id="myreportsContent" class="hidden">
-        <div id="myReportsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- Rendered by myreports.js -->
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ================= TAB 2: REPORT AN ISSUE ================= -->
+    <!-- 2. SUBMIT REPORT SECTION (Student, Faculty, Staff) -->
     <section id="section-report" class="tab-section hidden max-w-3xl mx-auto space-y-6">
-      
-      <!-- Form Header -->
-      <div class="text-center space-y-2">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold">
-          <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-          Privacy Shielded Reporting
+      <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm">
+        <div class="mb-6">
+          <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider">
+            Issue Dispatch System
+          </span>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white mt-1">Submit Facilities Report</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Report maintenance issues, faulty equipment, or campus hazards. Real-time categorization and dispatch.
+          </p>
         </div>
-        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Report a Maintenance Issue</h2>
-        <p class="text-sm text-slate-500 max-w-md mx-auto">
-          Describe the problem. FixIt automatically suggests the category, estimates priority, and checks for existing duplicate reports.
-        </p>
-      </div>
 
-      <!-- Main Report Card -->
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-md">
-        
-        <form id="issueReportForm" class="space-y-6">
-          
-          <!-- Problem Description -->
-          <div class="space-y-1.5">
-            <label for="reportDescription" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Describe the Problem <span class="text-rose-500">*</span>
-            </label>
-            <textarea 
-              id="reportDescription" 
-              rows="3" 
-              required 
-              placeholder="e.g. The ceiling fan in Room 204 is making squeaking noises and stopped working. Sparks seen near switch."
-              class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition leading-relaxed"
-            ></textarea>
-            <p class="text-[11px] text-slate-400">💡 Tip: Be specific about the defect. Real-time smart analysis activates as you type.</p>
-          </div>
-
-          <!-- SMART INSIGHTS BOX (Real-time Analysis Banner) -->
-          <div id="smartInsightsBox" class="hidden bg-indigo-50/80 border border-indigo-200/80 rounded-2xl p-4 space-y-3 animate-fade-in">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-                Automatic Priority & Category Classification
-              </span>
-            </div>
-
-            <!-- Suggested Category & Priority Row -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              
-              <!-- Category Suggestion -->
-              <div class="bg-white p-3 rounded-xl border border-indigo-100 flex items-center justify-between">
-                <div>
-                  <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Suggested Category</div>
-                  <div id="suggestedCategoryBadge" class="font-bold text-indigo-900 text-sm mt-0.5">—</div>
-                </div>
-                <button type="button" id="applySuggestedCategoryBtn" class="px-2.5 py-1 text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg transition">
-                  Apply
-                </button>
-              </div>
-
-              <!-- Priority Suggestion -->
-              <div class="bg-white p-3 rounded-xl border border-indigo-100 flex items-center justify-between">
-                <div>
-                  <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Assigned Priority</div>
-                  <div id="suggestedPriorityBadge" class="mt-0.5">—</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Priority Rationale -->
-            <div class="text-[11px] text-indigo-900/80 font-medium bg-white/60 p-2.5 rounded-xl border border-indigo-100/60 flex items-start gap-2">
-              <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5"></i>
-              <span id="priorityRationaleText">Classified automatically based on safety and service impact rules.</span>
-            </div>
-
-            <!-- Safety Alert (if sparks/hazard) -->
-            <div id="safetyAlertBanner" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <span class="text-base">🚨</span>
-              <span>Potential safety risk flagged! Maintenance supervisors are prioritized automatically.</span>
-            </div>
-          </div>
-
-          <!-- DUPLICATE COMPLAINT ALERT (Problem Statement Requirement) -->
-          <div id="duplicateAlertBox" class="hidden bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-3 animate-fade-in">
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">⚠️</span>
-                <div>
-                  <h4 class="text-xs font-bold text-amber-900 uppercase tracking-wide">Possible Existing Issue Found</h4>
-                  <p class="text-xs text-amber-800">Similar complaints exist for this campus location. You can link your report to increase priority without duplicating tickets!</p>
-                </div>
-              </div>
-              <button type="button" onclick="ReportForm.dismissDuplicateAlert()" class="text-amber-800 hover:text-amber-950 font-bold text-xs p-1" title="Report separately">
-                ✕
-              </button>
-            </div>
-
-            <!-- Duplicates List -->
-            <div id="potentialDuplicatesList" class="space-y-2">
-              <!-- Rendered by report-form.js -->
-            </div>
-
-            <div class="flex justify-end pt-1">
-              <button type="button" onclick="ReportForm.dismissDuplicateAlert()" class="text-xs text-amber-900 font-semibold underline hover:text-amber-700">
-                No, this is a different issue — Report Separately
-              </button>
-            </div>
-          </div>
-
-          <!-- Location Fields -->
+        <form id="issueReportForm" class="space-y-5">
+          <!-- Campus & Department (Loaded from Supabase) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="reportLocation" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Campus Building / Block <span class="text-rose-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="reportLocation" 
-                required 
-                placeholder="e.g. Science Block, Central Library, Hostel B"
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
-              >
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Campus</label>
+              <select id="reportCampus" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></select>
             </div>
-
-            <div class="space-y-1.5">
-              <label for="reportSpecificArea" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Specific Area / Room No
-              </label>
-              <input 
-                type="text" 
-                id="reportSpecificArea" 
-                placeholder="e.g. Room 204, 2nd Floor Corridor, Hall LH-2"
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
-              >
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
+              <select id="reportDepartment" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></select>
             </div>
           </div>
 
-          <!-- Category & Priority Controls -->
+          <!-- Building & Room (Building · Room everywhere!) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="reportCategory" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Category <span class="text-rose-500">*</span>
-              </label>
-              <select 
-                id="reportCategory" 
-                required
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
-              >
-                <option value="">Select Category...</option>
-                <option value="Electrical">Electrical (Fans, Lights, MCB, AC)</option>
-                <option value="Plumbing">Plumbing (Pipes, Taps, Washrooms)</option>
-                <option value="Furniture">Furniture (Chairs, Desks, Doors)</option>
-                <option value="Cleaning">Cleaning & Sanitation</option>
-                <option value="Classroom">Classroom Equipment (Projector, Mic)</option>
-                <option value="Internet/Network">Internet & Wi-Fi Outage</option>
-                <option value="Security">Security & Access</option>
-                <option value="Infrastructure">Infrastructure (Walls, Tiles, Roof)</option>
-                <option value="Other">Other Maintenance</option>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Building Filter</label>
+              <select id="reportBuilding" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Room Location (Building · Room)</label>
+              <select id="reportRoom" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></select>
+            </div>
+          </div>
+
+          <!-- Equipment / Asset Selector -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Associated Equipment / Asset</label>
+            <select id="reportAsset" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></select>
+          </div>
+
+          <!-- Description Input -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Issue Description *</label>
+            <textarea id="reportDescription" rows="4" minlength="10" maxlength="10000" placeholder="Describe the fault or hazard in detail (e.g. Electrical panel is sparking in Laboratory Block · L-202)..." class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" required></textarea>
+          </div>
+
+          <!-- Non-Generative Keyword Suggestion Banner -->
+          <div class="space-y-2 py-3">
+            <label for="reportPhoto" class="block text-xs font-semibold">Problem photo <span class="text-slate-500">(optional)</span></label>
+            <input id="reportPhoto" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="reportPhotoHelp" class="block text-xs max-w-full" onchange="ReportPhotos.preview(this)">
+            <p id="reportPhotoHelp" class="text-xs text-slate-500">One JPG, PNG or WebP image, up to 5 MB. Visible to you and staff permitted to handle your report.</p>
+            <img id="reportPhotoPreview" alt="Selected problem photo" hidden style="max-width:100%;max-height:220px;border-radius:12px">
+            <button id="removeReportPhoto" type="button" hidden onclick="ReportPhotos.clearPreview()" class="text-xs underline">Remove photo</button>
+          </div>
+          <div id="keywordSuggestionBox" class="hidden"></div>
+
+          <!-- Category & Priority -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Maintenance Category</label>
+              <select id="reportCategory" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="general">General Campus Maintenance</option>
+                <option value="electrical">Electrical Infrastructure</option>
+                <option value="plumbing">Plumbing & Water Supply</option>
+                <option value="it">IT & Network Infrastructure</option>
+                <option value="hvac">HVAC & Climate Control</option>
               </select>
             </div>
-
-            <div class="space-y-1.5">
-              <label for="reportPriority" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Assigned Priority Level (Automatic)
-              </label>
-              <select 
-                id="reportPriority"
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
-              >
-                <option value="Critical">Critical</option>
-                <option value="High">High</option>
-                <option value="Medium" selected>Medium</option>
-                <option value="Low">Low</option>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Priority Level</label>
+              <select id="reportPriority" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="1">Priority 1 (Critical / Safety Threat)</option>
+                <option value="2">Priority 2 (High / Class Interruption)</option>
+                <option value="3" selected>Priority 3 (Medium / Standard Repair)</option>
+                <option value="4">Priority 4 (Low / Scheduled Upkeep)</option>
               </select>
             </div>
           </div>
 
-          <!-- Required Photo Upload Section -->
-          <div class="space-y-1.5" id="photoUploadSection">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Photo Proof <span class="text-rose-500 font-bold">* (Required)</span>
-              </label>
-              <span class="text-[11px] text-rose-500 font-semibold flex items-center gap-1">
-                <i data-lucide="asterisk" class="w-3 h-3"></i> At least 1 photo required
-              </span>
-            </div>
-            
-            <input type="file" id="photoFileInput" accept="image/png,image/jpeg,image/webp,image/jpg" class="hidden">
-            
-            <!-- Photo Dropzone -->
-            <div id="photoDropzone" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-indigo-400 transition cursor-pointer bg-slate-50/50">
-              <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2">
-                <i data-lucide="camera" class="w-6 h-6"></i>
-              </div>
-              <p class="text-xs font-semibold text-slate-700">
-                <span id="photoUploadTrigger" class="text-indigo-600 hover:text-indigo-700 cursor-pointer font-bold underline">Click to choose photo</span> or drag and drop image here
-              </p>
-              <p class="text-[11px] text-slate-400 mt-1">Required: JPG, PNG, or WEBP (Max 8 MB)</p>
-            </div>
-
-            <!-- Validation Error Alert -->
-            <div id="photoValidationError" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-              <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600 shrink-0"></i>
-              <span>At least one photo proof is required to submit a complaint. Please select a photo.</span>
-            </div>
-
-            <!-- Photo Preview Container -->
-            <div id="photoPreviewContainer" class="hidden bg-slate-100 p-3 rounded-2xl flex items-center justify-between gap-3 border border-slate-200">
-              <div class="flex items-center gap-3">
-                <img id="photoPreviewImg" src="" alt="Proof Preview" class="w-16 h-16 object-cover rounded-xl border border-white shadow-sm">
-                <div>
-                  <span id="photoFileName" class="text-xs font-semibold text-slate-800 line-clamp-1">photo.jpg</span>
-                  <span class="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
-                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Photo selected (Ready to upload on submit)
-                  </span>
-                </div>
-              </div>
-              <button type="button" id="removePhotoBtn" class="px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition">
-                Change Photo
-              </button>
-            </div>
-          </div>
-
-          <!-- Optional Video Upload Section -->
-          <div class="space-y-1.5 pt-1" id="videoUploadSection">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Video Proof <span class="text-slate-400 font-normal lowercase">(optional)</span>
-              </label>
-              <span class="text-[11px] text-slate-400">MP4, WEBM (Max 25 MB)</span>
-            </div>
-
-            <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime" class="hidden">
-
-            <div id="videoDropzone" class="border border-dashed border-slate-200 rounded-xl p-3 text-center hover:border-indigo-300 transition cursor-pointer bg-slate-50/40 flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2 text-xs text-slate-600">
-                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                  <i data-lucide="video" class="w-4 h-4"></i>
-                </div>
-                <div class="text-left">
-                  <span id="videoUploadTrigger" class="font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer">Add optional video clip</span>
-                  <div class="text-[10px] text-slate-400">Helps maintenance observe sounds or intermittent faults</div>
-                </div>
-              </div>
-              <button type="button" id="browseVideoBtn" class="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg shadow-sm transition">
-                Browse Video
-              </button>
-            </div>
-
-            <!-- Video Preview Container -->
-            <div id="videoPreviewContainer" class="hidden bg-slate-100 p-3 rounded-2xl flex items-center justify-between gap-3 border border-slate-200">
-              <div class="flex items-center gap-3">
-                <video id="videoPreviewPlayer" class="w-16 h-16 object-cover rounded-xl border border-white shadow-sm" muted controls></video>
-                <div>
-                  <span id="videoFileName" class="text-xs font-semibold text-slate-800 line-clamp-1">video.mp4</span>
-                  <span class="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
-                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Video attached (Optional)
-                  </span>
-                </div>
-              </div>
-              <button type="button" id="removeVideoBtn" class="px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition">
-                Remove Video
-              </button>
-            </div>
-          </div>
-
-
-          <!-- Privacy Shield Section (Differentiating Feature) -->
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-            <div class="flex items-start gap-3">
-              <input 
-                type="checkbox" 
-                id="reportPrivacyMode" 
-                checked 
-                class="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
-              >
-              <div>
-                <label for="reportPrivacyMode" class="text-xs font-bold text-slate-800 cursor-pointer">
-                  Keep my identity private (Default: Protected)
-                </label>
-                <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                  Your name, student ID, and contact details will NEVER appear on public campus feeds. The report is indexed only by its tracking code (e.g. FIX-1048).
-                </p>
-              </div>
-            </div>
-
-            <!-- Optional Private Contact -->
-            <div class="pl-7 pt-1">
-              <input 
-                type="text" 
-                id="reportContact" 
-                placeholder="Optional: Phone or Roll No (Only facility admins can see this if urgent access needed)"
-                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-            </div>
-          </div>
-
-          <!-- Form Actions -->
-          <div class="pt-4 flex flex-col sm:flex-row items-center justify-end gap-3 border-t border-slate-100">
-            <button type="button" id="resetReportBtn" class="w-full sm:w-auto px-5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
-              Reset Form
+          <!-- Actions -->
+          <div class="pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/60">
+            <button type="button" id="resetReportBtn" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+              Clear Inputs
             </button>
-            <button type="submit" id="submitReportBtn" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2">
-              <i data-lucide="send" class="w-4 h-4"></i>
-              Submit Report
+            <button type="submit" id="submitReportBtn" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition">
+              Submit Facilities Report
             </button>
           </div>
-
         </form>
-
       </div>
     </section>
 
-    <!-- ================= TAB 3: ADMIN MANAGEMENT ================= -->
-    <section id="section-admin" class="tab-section hidden space-y-6">
-      
-      <!-- Admin Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <!-- 3. MY REPORTS SECTION (Student & Faculty) -->
+    <section id="section-myreports" class="tab-section hidden space-y-6">
+      <div id="myreportsSigninPrompt" class="hidden text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+        <i data-lucide="lock" class="w-10 h-10 mx-auto text-indigo-500 mb-3"></i>
+        <h3 class="text-lg font-bold">Sign In to View Your Reports</h3>
+        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Access your submitted maintenance reports and technician clarification chat.</p>
+        <button id="myreportsSigninBtn" class="mt-4 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs">Sign In</button>
+      </div>
+
+      <div id="myreportsContent" class="space-y-6">
+        <div class="flex items-center justify-between">
           <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold mb-1">
-              <i data-lucide="shield" class="w-3.5 h-3.5 text-indigo-400"></i>
-              Campus Facility Command Center
-            </div>
-            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Maintenance Operations & Dispatch</h2>
-          <p class="text-xs text-slate-500">Triage reported campus complaints, change repair workflow stages, and audit timeline logs.</p>
+            <h2 class="text-2xl font-black text-slate-900 dark:text-white">My Maintenance Reports</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Track real-time incident progress, technician replies, and stage timelines.</p>
+          </div>
+          <button onclick="App.switchTab('report')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            New Report
+          </button>
         </div>
 
-        <button id="adminPresetCriticalBtn" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition">
-          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-          Show Critical & Submitted Issues
-        </button>
-      </div>
-
-      <!-- Admin Dynamic KPI Counter Grid (Requirements 9 & 10) -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <!-- Total -->
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm text-center">
-          <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total</div>
-          <div id="adminTotalCount" class="text-2xl font-extrabold text-slate-900 mt-1">—</div>
-        </div>
-        <!-- Submitted -->
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm text-center">
-          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Submitted</div>
-          <div id="adminPendingCount" class="text-2xl font-extrabold text-slate-700 mt-1">—</div>
-        </div>
-        <!-- In Progress -->
-        <div class="bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-sm text-center bg-indigo-50/30">
-          <div class="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">In Progress</div>
-          <div id="adminInProgressCount" class="text-2xl font-extrabold text-indigo-700 mt-1">—</div>
-        </div>
-        <!-- Resolved -->
-        <div class="bg-white p-3.5 rounded-2xl border border-emerald-100 shadow-sm text-center bg-emerald-50/30">
-          <div class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Resolved</div>
-          <div id="adminResolvedCount" class="text-2xl font-extrabold text-emerald-700 mt-1">—</div>
-        </div>
-
-        <!-- Critical Count -->
-        <div class="bg-white p-3.5 rounded-2xl border border-rose-100 shadow-sm text-center bg-rose-50/30">
-          <div class="text-[10px] text-rose-600 font-bold uppercase tracking-wider">🚨 Critical</div>
-          <div id="adminCriticalCount" class="text-2xl font-extrabold text-rose-700 mt-1">—</div>
-        </div>
-        <!-- High Count -->
-        <div class="bg-white p-3.5 rounded-2xl border border-orange-100 shadow-sm text-center">
-          <div class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">🔴 High</div>
-          <div id="adminHighCount" class="text-2xl font-extrabold text-orange-700 mt-1">—</div>
-        </div>
-        <!-- Medium Count -->
-        <div class="bg-white p-3.5 rounded-2xl border border-amber-100 shadow-sm text-center">
-          <div class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">🟠 Medium</div>
-          <div id="adminMediumCount" class="text-2xl font-extrabold text-amber-700 mt-1">—</div>
-        </div>
-        <!-- Low Count -->
-        <div class="bg-white p-3.5 rounded-2xl border border-emerald-100 shadow-sm text-center">
-          <div class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">🟢 Low</div>
-          <div id="adminLowCount" class="text-2xl font-extrabold text-emerald-700 mt-1">—</div>
+        <div id="myReportsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated by MyReports.js -->
         </div>
       </div>
+    </section>
 
-      <!-- Resolution Progress Bar -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-slate-700">Campus Resolution Rate:</span>
-          <span id="adminResolutionRateText" class="text-xs font-bold text-emerald-600">0%</span>
+    <!-- 4. BUILDINGS & ROOMS MANAGEMENT SCREEN (Facilities Admin) -->
+    <section id="section-rooms" class="tab-section hidden space-y-8">
+      <!-- Section Header -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold uppercase tracking-wider">
+            Facilities Administration
+          </span>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white mt-1">Buildings & Rooms Management</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Full authority to add, edit, and configure campus buildings, classrooms, labs, capacity, and equipment.
+          </p>
         </div>
-        <div class="flex-1 max-w-md bg-slate-100 h-2.5 rounded-full overflow-hidden">
-          <div id="adminResolutionRateBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <!-- Admin Filters Toolbar -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-        
-        <!-- Search -->
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input 
-            type="text" 
-            id="adminSearch" 
-            placeholder="Search tickets by ID, title, room, or category..."
-            class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-          >
-        </div>
-
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Status -->
-          <select id="adminFilterStatus" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">All Statuses</option>
-            <option value="Submitted">Submitted</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-          </select>
-
-          <!-- Priority -->
-          <select id="adminFilterPriority" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">All Priorities</option>
-            <option value="Critical">Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-
-          <!-- Category -->
-          <select id="adminFilterCategory" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">All Categories</option>
-            <option value="Electrical">Electrical</option>
-            <option value="Plumbing">Plumbing</option>
-            <option value="Furniture">Furniture</option>
-            <option value="Cleaning">Cleaning</option>
-            <option value="Classroom">Classroom</option>
-            <option value="Internet/Network">Internet/Network</option>
-            <option value="Security">Security</option>
-            <option value="Infrastructure">Infrastructure</option>
-          </select>
-
-          <button id="adminResetFiltersBtn" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition">
-            Reset
+        <div class="flex gap-2">
+          <button id="openAddBuildingModalBtn" class="px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Add Building
+          </button>
+          <button id="openAddRoomModalBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Add Room
           </button>
         </div>
       </div>
 
-      <!-- Admin Issues Table -->
-      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-slate-900">Maintenance Tickets Queue</h3>
-          <span id="adminResultsBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
-            Loading...
-          </span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                <th class="py-3 px-4">Ticket ID</th>
-                <th class="py-3 px-4">Category</th>
-                <th class="py-3 px-4">Problem & Location</th>
-                <th class="py-3 px-4">Priority</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4">Impact</th>
-                <th class="py-3 px-4 text-right">Workflow Action</th>
-              </tr>
-            </thead>
-            <tbody id="adminIssuesTableBody">
-              <!-- Rendered dynamically by admin.js -->
-            </tbody>
-          </table>
+      <!-- Buildings List -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i data-lucide="building" class="w-4 h-4 text-indigo-600"></i>
+          Campus Buildings
+        </h3>
+        <div id="buildingsListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated dynamically by buildings-rooms.js -->
         </div>
       </div>
 
-    </section>
-
-    <!-- ================= TAB 4: RESOLUTION STATISTICS & ANALYTICS ================= -->
-    <section id="section-analytics" class="tab-section hidden space-y-6">
-      
-      <!-- Analytics Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-1">
-            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i>
-            Live Performance Metrics
+      <!-- Rooms List with Building Filter -->
+      <div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <i data-lucide="door-open" class="w-4 h-4 text-indigo-600"></i>
+            Rooms & Classrooms
+          </h3>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-500 font-semibold">Filter by Building:</label>
+            <select id="roomBuildingFilter" class="text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"></select>
           </div>
-          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Campus Resolution Statistics</h2>
-          <p class="text-xs text-slate-500">Official Problem Statement Requirement: Real-time issue tracking analytics and category breakdowns.</p>
         </div>
 
-        <!-- Reset Demo Data Button -->
-        <button id="resetDemoDataBtn" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-2 border border-slate-300 shadow-sm transition" title="Restore sample campus complaints for hackathon judge evaluation">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-500"></i>
-          Reset Demo Data
+        <div id="roomsListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated dynamically by buildings-rooms.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. WORK ORDERS (Technician & Facilities) -->
+    <section id="section-workorders" class="tab-section hidden space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">Assigned Work Orders</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Execution lifecycle: Acknowledge, reserve materials, start work, and complete tickets.</p>
+        </div>
+
+        <!-- Availability Toggle -->
+        <div class="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Available for Dispatch</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="technicianAvailabilityToggle" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Technician Status Banner: Skills & Shifts -->
+      <div class="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">My Assigned Skills</span>
+          <div id="techSkillsBadges" class="flex flex-wrap gap-1.5"></div>
+        </div>
+        <div id="techShiftInfo" class="sm:text-right"></div>
+      </div>
+
+      <div id="workOrdersListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Populated by work-orders.js -->
+      </div>
+    </section>
+
+    <!-- 6. BOOKINGS & CLASSES (Faculty & Facilities) -->
+    <section id="section-bookings" class="tab-section hidden space-y-8">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">Classrooms & Room Bookings</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Schedule lectures, discover vacant alternative rooms, and manage reservations.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="openBookRoomModalBtn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+            <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+            Book a Room
+          </button>
+        </div>
+      </div>
+
+      <!-- Affected Classes Box (Disruptions Alert) -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>
+            Affected Classes & Facility Hazards
+          </h3>
+          <span id="affectedClassesBadge" class="hidden px-2 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white">0</span>
+        </div>
+        <div id="affectedClassesContainer">
+          <!-- Populated by bookings.js -->
+        </div>
+      </div>
+
+      <!-- My Classes -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i>
+          My Taught Courses
+        </h3>
+        <div id="myClassesContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated by bookings.js -->
+        </div>
+      </div>
+
+      <!-- Room Bookings Schedule -->
+      <div class="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+          Scheduled Campus Bookings
+        </h3>
+        <div id="bookingsListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated by bookings.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. OPERATIONS & INCIDENT QUEUE (Manager & Facilities) -->
+    <section id="section-operations" class="tab-section hidden space-y-8">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">Operations & Department Queue</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Triage incidents, dispatch work orders, manage budgets, and resolve maintenance cases.</p>
+        </div>
+        <button onclick="Operations.openPurchaseModal()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          Request Purchase Order
         </button>
       </div>
 
-      <!-- KPI Summary Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div class="text-xs text-slate-500 font-medium">Total Complaints</div>
-          <div id="analyticsTotalIssues" class="text-3xl font-extrabold text-slate-900 mt-1">—</div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div class="text-xs text-slate-500 font-medium">Submitted</div>
-          <div id="analyticsPending" class="text-3xl font-extrabold text-slate-600 mt-1">—</div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm bg-indigo-50/20">
-          <div class="text-xs text-indigo-600 font-medium">In Progress</div>
-          <div id="analyticsInProgress" class="text-3xl font-extrabold text-indigo-700 mt-1">—</div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm bg-emerald-50/20">
-          <div class="text-xs text-emerald-600 font-medium">Resolved</div>
-          <div id="analyticsResolved" class="text-3xl font-extrabold text-emerald-700 mt-1">—</div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm bg-emerald-50/40">
-          <div class="text-xs text-emerald-700 font-bold">Resolution Rate</div>
-          <div id="analyticsResolutionRate" class="text-3xl font-extrabold text-emerald-600 mt-1">—</div>
+      <!-- Incidents Queue -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+          Active Campus Incidents
+        </h3>
+        <div id="operationsIncidentsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated by operations.js -->
         </div>
       </div>
 
-      <!-- Resolution Progress Gauge -->
-      <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-bold text-slate-800">Campus Resolution Rate Progress</span>
-          <span class="text-xs font-medium text-slate-500">Target: 85%+</span>
-        </div>
-        <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden p-0.5">
-          <div id="analyticsProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-700" style="width: 0%"></div>
+      <!-- Work Orders Queue -->
+      <div class="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i data-lucide="wrench" class="w-4 h-4 text-indigo-600"></i>
+          Dispatched Work Orders
+        </h3>
+        <div id="operationsWorkOrdersContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Populated by operations.js -->
         </div>
       </div>
 
-      <!-- Charts Grid -->
+      <!-- Department Budgets -->
+      <div class="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i>
+          Maintenance Budgets & Balances
+        </h3>
+        <div id="operationsBudgetsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Populated by operations.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. APPROVALS (Manager & Procurement Approver) -->
+    <section id="section-approvals" class="tab-section hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">Multi-Stage Approval Queue</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Authorizations for repair costs, material purchase orders, and room overrides.</p>
+        </div>
+      </div>
+
+      <div id="approvalsListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Populated by approvals.js -->
+      </div>
+    </section>
+
+    <!-- 9. INVENTORY (Facilities Admin) -->
+    <section id="section-inventory" class="tab-section hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">Warehouse Inventory & Stock</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Manage spare parts on hand, record adjustments with reasons, and monitor shortages.</p>
+        </div>
+      </div>
+
+      <div id="inventoryListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Populated by inventory.js -->
+      </div>
+    </section>
+
+    <!-- 10. SYSTEM ADMIN (Membership Management) -->
+    <section id="section-sysadmin" class="tab-section hidden space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-white text-xs font-bold uppercase tracking-wider">
+            System Administration
+          </span>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white mt-1">Account & Membership Governance</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Provision and manage user roles via <code>campusops_set_member</code>.</p>
+        </div>
+        <button id="openAddMemberModalBtn" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          Provision Member
+        </button>
+      </div>
+
+      <div id="sysadminMembersList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Populated by sysadmin.js -->
+      </div>
+    </section>
+
+    <!-- 11. NOTIFICATIONS (All Roles) -->
+    <section id="section-notifications" class="tab-section hidden space-y-6">
+      <div>
+        <h2 class="text-2xl font-black text-slate-900 dark:text-white">CampusOps Notifications</h2>
+        <p class="text-xs text-slate-500 mt-0.5">System-generated dispatch alerts, approvals, and maintenance milestones.</p>
+      </div>
+
+      <div id="notificationsListContainer" class="max-w-3xl space-y-3">
+        <!-- Populated by notifications.js -->
+      </div>
+    </section>
+
+    <!-- 12. ANALYTICS (Manager & Facilities) -->
+    <section id="section-analytics" class="tab-section hidden space-y-8">
+      <div>
+        <h2 class="text-2xl font-black text-slate-900 dark:text-white">Operational Intelligence & SLAs</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Performance tracking from Supabase analytical views.</p>
+      </div>
+
+      <!-- Analytics Metric Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Work Orders</span>
+          <div id="statTotalWorkOrders" class="text-3xl font-black text-indigo-600 mt-1">1</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">SLA Compliance</span>
+          <div id="statSlaCompliance" class="text-3xl font-black text-emerald-600 mt-1">100%</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Stock Shortage Alerts</span>
+          <div id="statStockAlertsCount" class="text-3xl font-black text-rose-600 mt-1">1</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Tech Staff</span>
+          <div id="statActiveTechnicians" class="text-3xl font-black text-slate-900 dark:text-white mt-1">4</div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        <!-- Category Breakdown Chart -->
-        <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-slate-900">Issues by Category</h3>
-            <span class="text-xs text-slate-400">Total & Resolved</span>
-          </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 mb-4">Work Orders by Maintenance Domain</h3>
           <div class="h-64 relative">
-            <canvas id="categoryChartCanvas"></canvas>
+            <canvas id="analyticsCategoryChart"></canvas>
           </div>
         </div>
-
-        <!-- Priority Breakdown Chart -->
-        <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-slate-900">Issues by Priority Level</h3>
-            <span class="text-xs text-slate-400">Critical / High / Medium / Low</span>
-          </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 mb-4">Staff Workload Distribution</h3>
           <div class="h-64 relative">
-            <canvas id="priorityChartCanvas"></canvas>
+            <canvas id="analyticsPriorityChart"></canvas>
           </div>
-        </div>
-
-      </div>
-
-      <!-- Locations Distribution -->
-      <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-bold text-slate-900">Top Reported Campus Facilities</h3>
-          <span class="text-xs text-slate-400">Location hotspots</span>
-        </div>
-        <div id="analyticsLocationsList" class="space-y-1">
-          <!-- Rendered dynamically -->
         </div>
       </div>
 
+      <!-- Stock Alerts & Recurring Hotspots Tables -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-1.5">
+            <i data-lucide="package-alert" class="w-4 h-4 text-rose-500"></i>
+            Stock Alerts View (campusops_stock_alerts)
+          </h3>
+          <div id="stockAlertsContainer"></div>
+        </div>
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-1.5">
+            <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i>
+            Recurring Hotspots (campusops_recurring_incidents)
+          </h3>
+          <div id="recurringIncidentsContainer"></div>
+        </div>
+      </div>
     </section>
 
   </main>
 
-  <!-- ================= FOOTER ================= -->
-  <footer class="bg-white border-t border-slate-200 py-6 mt-12">
-    <div class="max-w-7xl mx-auto px-4 text-center sm:flex sm:items-center sm:justify-between text-xs text-slate-500">
-      <div class="flex items-center justify-center sm:justify-start gap-2">
-        <span class="font-bold text-slate-900">FixIt</span>
-        <span>— Hackathon Project PS 5: Campus Maintenance Reporting System</span>
-      </div>
-      <div class="mt-2 sm:mt-0 flex items-center justify-center gap-4 text-slate-400">
-        <span>Zero-Cost Local Prototype</span>
-        <span>•</span>
-        <span>Privacy-First Architecture</span>
-      </div>
-    </div>
-  </footer>
+  <!-- ================= MODALS ================= -->
 
-  <!-- ================= MODALS & DRAWERS ================= -->
-
-  <!-- 1. ISSUE DETAIL MODAL (Public / Reporter View) -->
-  <div id="issueDetailModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-fade-in space-y-6">
-      
-      <!-- Close Button -->
-      <button data-close-modal class="absolute right-5 top-5 text-slate-400 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <!-- Modal Header -->
-      <div>
-        <div class="flex items-center gap-2 mb-2 flex-wrap">
-          <span id="modalIssueCode" class="font-mono font-bold text-xs px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md border border-slate-200">FIX-1040</span>
-          <span id="modalPriorityBadge"></span>
-          <span id="modalStatusBadge"></span>
+  <!-- 1. AUTH MODAL -->
+  <div id="authModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-xl font-extrabold text-slate-900 dark:text-white">Sign In to CampusOps</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Use your college account to access your personal workspace.</p>
         </div>
-        <h3 id="modalTitle" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">Issue Title</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
       </div>
 
-      <!-- Photo Proof -->
-      <div id="modalPhotoContainer" class="hidden rounded-2xl overflow-hidden border border-slate-200 bg-slate-900">
-        <img id="modalPhotoImg" src="" alt="Proof" class="w-full max-h-72 object-contain mx-auto">
-      </div>
-
-      <!-- Description & Metadata -->
-      <div class="space-y-3 text-xs sm:text-sm">
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Problem Description</span>
-          <p id="modalDescription" class="text-slate-800 leading-relaxed font-normal whitespace-pre-line"></p>
+      <form id="authForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+          <input type="email" id="authEmail" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Your college account email" autocomplete="username" required>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 text-xs">
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase">Location</span>
-            <div id="modalLocation" class="font-semibold text-slate-800 mt-0.5 truncate">Science Block</div>
-          </div>
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase">Category</span>
-            <div id="modalCategory" class="font-semibold text-slate-800 mt-0.5">Electrical</div>
-          </div>
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase">Assigned Unit</span>
-            <div id="modalAssignedTo" class="font-semibold text-slate-800 mt-0.5">Maintenance Dept</div>
-          </div>
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase">Reported At</span>
-            <div id="modalCreatedAt" class="font-semibold text-slate-800 mt-0.5">10:30 AM</div>
-          </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <input type="password" id="authPassword" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Your password" autocomplete="current-password" required>
         </div>
 
-        <!-- Privacy Shield Notice -->
-        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 shrink-0"></i>
-          <span><strong>Privacy Protected:</strong> Reporter name and roll number shielded from public display.</span>
-        </div>
-
-        <!-- Priority Rationale Score -->
-        <div id="modalScoreRationale" class="p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-indigo-900 text-xs font-medium">
-          Priority calculated automatically.
-        </div>
-      </div>
-
-      <!-- Linked Reports Section (Requirements 8 & 14) -->
-      <div id="modalLinkedReportsBox" class="hidden space-y-2 border-t border-slate-100 pt-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-            <i data-lucide="users" class="w-4 h-4 text-indigo-600"></i>
-            Linked Reports (<span id="modalPeopleCount">1 person</span>)
-          </span>
-        </div>
-        <ul id="modalLinkedList" class="space-y-1.5 max-h-36 overflow-y-auto">
-          <!-- Linked reports injected here -->
-        </ul>
-      </div>
-
-      <!-- Interactive Issue Timeline (Requirement 13) -->
-      <div class="border-t border-slate-100 pt-4 space-y-3">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Issue Resolution Timeline</h4>
-        <div id="modalTimelineContainer" class="space-y-1 relative pl-2">
-          <!-- Rendered by dashboard.js -->
-        </div>
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="border-t border-slate-100 pt-4 flex items-center justify-between gap-3">
-        <button id="modalLinkMyReportBtn" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-xl transition flex items-center gap-1.5">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          I Also Have This Problem (+1)
+        <button type="submit" id="authSubmitBtn" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition">
+          Sign In to CampusOps
         </button>
-        <button data-close-modal class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition">
-          Close
-        </button>
-      </div>
 
+        <p class="text-xs text-slate-500 leading-relaxed">Need access? Contact your college administrator.</p>
+      </form>
     </div>
   </div>
 
-  <!-- 2. ADMIN TICKET MANAGEMENT MODAL -->
-  <div id="adminManageModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-fade-in space-y-5">
-      
-      <!-- Close Button -->
-      <button data-close-modal class="absolute right-5 top-5 text-slate-400 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <!-- Admin Modal Header -->
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span id="adminModalIssueCode" class="font-mono font-bold text-xs px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md border border-slate-200">FIX-1040</span>
-          <span id="adminModalPriorityBadge"></span>
-          <span id="adminModalStatusBadge"></span>
+  <!-- 2. ADD/EDIT BUILDING MODAL (Facilities Admin) -->
+  <div id="buildingModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="buildingModalTitle" class="text-lg font-extrabold text-slate-900 dark:text-white">Add Campus Building</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="buildingForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Campus</label>
+          <select id="buildingCampusSelect" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200"></select>
         </div>
-        <h3 id="adminModalTitle" class="text-lg font-bold text-slate-900">Manage Ticket</h3>
-        <p id="adminModalLocation" class="text-xs text-slate-500 mt-0.5">Location</p>
-      </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Building Name *</label>
+          <input type="text" id="buildingNameInput" placeholder="e.g. Science Complex, Technology Annex" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="buildingSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition">Save Building</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-      <!-- Photo proof in admin modal -->
-      <div id="adminModalPhotoBox" class="hidden rounded-xl overflow-hidden border border-slate-200">
-        <img id="adminModalPhotoImg" src="" alt="Proof" class="w-full max-h-48 object-cover">
+  <!-- 3. ADD/EDIT ROOM MODAL (Facilities Admin) -->
+  <div id="roomModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-lg w-full p-6 sm:p-8 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="roomModalTitle" class="text-lg font-extrabold text-slate-900 dark:text-white">Add Campus Room</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
       </div>
-
-      <!-- Description -->
-      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-slate-700">
-        <p id="adminModalDescription" class="leading-relaxed"></p>
-      </div>
-
-      <!-- Status Workflow Controls (Requirement 10) -->
-      <div class="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100 space-y-3">
-        <h4 class="text-xs font-bold text-indigo-950 uppercase tracking-wide">Advance Workflow Status</h4>
-        
+      <form id="roomForm" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Update Status</label>
-            <select id="adminModalStatusSelect" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500">
-              <option value="Submitted">Submitted (Under Triage)</option>
-              <option value="In Progress">In Progress (Dispatched)</option>
-              <option value="Resolved">Resolved (Completed)</option>
-            </select>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Building Selector *</label>
+            <select id="roomBuildingSelect" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200" required></select>
           </div>
-
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Override Priority</label>
-            <select id="adminModalPrioritySelect" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500">
-              <option value="Critical">🚨 Critical</option>
-              <option value="High">🔴 High</option>
-              <option value="Medium">🟠 Medium</option>
-              <option value="Low">🟢 Low</option>
-            </select>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Department *</label>
+            <select id="roomDepartmentSelect" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200" required></select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Room Name / Number *</label>
+            <input type="text" id="roomNameInput" placeholder="e.g. A-103, L-301" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Capacity (Persons) *</label>
+            <input type="number" id="roomCapacityInput" min="1" max="500" value="30" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200" required>
           </div>
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-600 mb-1">Technician / Status Note</label>
-          <input 
-            type="text" 
-            id="adminModalStatusNotes" 
-            placeholder="e.g. Electrician Sharma dispatched with replacement breaker..."
-            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500"
-          >
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Equipment List (comma separated)</label>
+          <input type="text" id="roomEquipmentInput" placeholder="e.g. Projector, Air Conditioner, Smart Board" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
         </div>
-      </div>
 
-      <!-- Linked Reports -->
-      <div id="adminModalLinkedContainer" class="hidden space-y-2">
-        <span class="text-xs font-bold text-slate-700">Linked Incident Reports</span>
-        <ul id="adminModalLinkedList" class="space-y-1"></ul>
-      </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Availability Status</label>
+          <select id="roomStatusSelect" class="w-full text-xs px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+            <option value="available">Available</option>
+            <option value="unavailable">Unavailable</option>
+          </select>
+        </div>
 
-      <!-- Timeline Audit -->
-      <div class="space-y-2 border-t border-slate-100 pt-3">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Timeline Audit Log</span>
-        <div id="adminModalTimeline" class="space-y-1 max-h-40 overflow-y-auto pl-2"></div>
-      </div>
-
-      <!-- Actions -->
-      <div class="border-t border-slate-100 pt-4 flex items-center justify-end gap-2">
-        <button data-close-modal class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
-          Cancel
-        </button>
-        <button id="adminModalSaveBtn" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition">
-          Save Ticket Updates
-        </button>
-      </div>
-
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="roomSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition">Save Room</button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <!-- 3. SUBMISSION CONFIRMATION MODAL -->
-  <div id="submissionSuccessModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl relative animate-fade-in space-y-4">
-      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-        <i data-lucide="check-check" class="w-8 h-8"></i>
-      </div>
-      
-      <div>
-        <h3 class="text-xl font-extrabold text-slate-900">Complaint Submitted!</h3>
-        <p class="text-xs text-slate-500 mt-1">Your maintenance report has been registered into the campus database.</p>
-      </div>
-
-      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left space-y-2 text-xs">
-        <div class="flex justify-between items-center">
-          <span class="text-slate-400 font-medium">Tracking Code:</span>
-          <span id="successIssueCode" class="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">FIX-1048</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-slate-400 font-medium">Category:</span>
-          <span id="successCategory" class="font-semibold text-slate-800">Electrical</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-slate-400 font-medium">Location:</span>
-          <span id="successLocation" class="font-semibold text-slate-800">Science Block</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-slate-400 font-medium">Assigned Priority:</span>
-          <span id="successPriority"></span>
-        </div>
-        <div class="flex justify-between items-center pt-1 border-t border-slate-200">
-          <span class="text-slate-400 font-medium">Privacy Status:</span>
-          <span class="text-emerald-700 font-bold flex items-center gap-1">
-            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Protected
-          </span>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2 pt-2">
-        <button id="successViewBtn" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition">
-          View Reported Issue
-        </button>
-        <button data-close-modal class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
-          Done
-        </button>
-      </div>
+  <!-- 4. REPORT DETAIL & CLARIFICATION CHAT MODAL -->
+  <div id="incidentPhotosModal" role="dialog" aria-modal="true" aria-labelledby="incidentPhotosTitle" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4"><h3 id="incidentPhotosTitle" class="font-bold">Report photos</h3><button data-close-modal aria-label="Close report photos">✕</button></div>
+      <div id="incidentPhotosContent"></div>
     </div>
   </div>
-
-  <!-- ================= STUDENT AUTH MODAL (SUPABASE) ================= -->
-  <div id="studentAuthModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-fade-in relative">
-      <button data-close-modal class="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <div class="text-center mb-6">
-        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+  <div id="reportDetailModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-2xl w-full p-6 sm:p-8 animate-scale-up max-h-[90vh] flex flex-col justify-between">
+      <div class="overflow-y-auto space-y-4 pr-1">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Report Details</span>
+            <h3 id="reportDetailTitle" class="text-lg font-black text-slate-900 dark:text-white mt-0.5"></h3>
+          </div>
+          <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
         </div>
-        <h3 id="authModalTitle" class="text-xl font-extrabold text-slate-900 tracking-tight">Student Portal Sign In</h3>
-        <p id="authModalSubtitle" class="text-xs text-slate-500 mt-1">Sign in with Supabase Auth to submit reports & track maintenance</p>
+
+        <div id="reportDetailMeta"></div>
+        <div id="reportDetailPhotos" class="py-3"></div>
+
+        <!-- Timeline Section -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-700">
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Live Incident Timeline</h4>
+          <div id="reportDetailTimeline" class="space-y-1"></div>
+        </div>
+
+        <!-- Clarification Messages Chat -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-700">
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Clarification & Dispatch Messages</h4>
+          <div id="reportDetailMessages" class="space-y-2 max-h-48 overflow-y-auto p-2 rounded-2xl bg-slate-50 dark:bg-slate-900/50"></div>
+        </div>
       </div>
 
-      <!-- Mode Toggle (Sign In vs Register) -->
-      <div class="flex bg-slate-100 p-1 rounded-2xl mb-5 text-xs font-semibold">
-        <button type="button" id="authTabSignIn" class="flex-1 py-2 rounded-xl bg-white text-indigo-600 shadow-sm transition">
-          Sign In
-        </button>
-        <button type="button" id="authTabSignUp" class="flex-1 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition">
-          Create Account
-        </button>
-      </div>
-
-      <form id="studentAuthForm" class="space-y-4 text-xs">
-        <!-- Extra Fields for Registration -->
-        <div id="authSignUpFields" class="hidden space-y-4">
-          <div class="space-y-1">
-            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Full Name</label>
-            <input type="text" id="authFullName" placeholder="e.g. Alex Morgan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-          </div>
-          <div class="space-y-1">
-            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Student ID / Matric Number</label>
-            <input type="text" id="authStudentId" placeholder="e.g. STU-2024-8841" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-            <p class="text-[10px] text-slate-400">🛡️ Kept strictly private from public visitors.</p>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Student Email</label>
-          <input type="email" id="authEmail" required placeholder="student@university.edu" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-        </div>
-
-        <div class="space-y-1">
-          <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Password</label>
-          <input type="password" id="authPassword" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
-        </div>
-
-        <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center gap-2 mt-2">
-          <span id="authSubmitBtnText">Sign In to FixIt</span>
-          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      <!-- Reply Box -->
+      <form onsubmit="MyReports.sendReply(event)" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex gap-2">
+        <input type="text" id="reportReplyInput" placeholder="Reply to clarification question..." class="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        <button type="submit" id="reportReplySubmitBtn" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shrink-0">
+          Send Reply
         </button>
       </form>
     </div>
   </div>
 
-  <!-- ================= TOAST CONTAINER ================= -->
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none [&>*]:pointer-events-auto max-w-sm"></div>
+  <!-- 5. COMPLETE WORK ORDER MODAL -->
+  <div id="completeWorkModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Complete Work Order</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="completeWorkForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Maintenance Completion Note *</label>
+          <textarea id="workCompletionNote" rows="3" placeholder="Describe actions taken, replaced parts, testing completed..." class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Actual Incurred Cost (₹)</label>
+          <input type="number" id="workActualCost" min="0" step="0.01" value="0" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="completeWorkSubmitBtn" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">Confirm Completion</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-  <!-- ================= SUPABASE & APPLICATION SCRIPTS ================= -->
-  <!-- Supabase JS Client (v2) from official CDN -->
+  <!-- 6. REPAIR APPROVAL REQUEST MODAL -->
+  <div id="repairApprovalModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Request Repair Approval</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="repairApprovalForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Approval Justification / Reason *</label>
+          <textarea id="repairApprovalReason" rows="3" placeholder="Explain why repair cost exceeds standard threshold or requires manager approval..." class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="repairApprovalEmergency" class="rounded text-indigo-600 focus:ring-indigo-500">
+          <label for="repairApprovalEmergency" class="text-xs font-semibold text-slate-700 dark:text-slate-300">Fast-track Emergency Requisition</label>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="repairApprovalSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. BOOK ROOM MODAL -->
+  <div id="bookRoomModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Schedule Room Booking</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="bookRoomForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Room (Building · Room) *</label>
+          <select id="bookRoomSelect" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200" required></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Booking Title / Lecture *</label>
+          <input type="text" id="bookRoomTitle" placeholder="e.g. Engineering Fundamentals Lecture" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Link to Course / Class</label>
+          <select id="bookRoomClass" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Starts At *</label>
+            <input type="datetime-local" id="bookRoomStart" class="w-full text-xs px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Ends At *</label>
+            <input type="datetime-local" id="bookRoomEnd" class="w-full text-xs px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Expected Attendees</label>
+          <input type="number" id="bookRoomAttendees" min="1" value="25" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="bookRoomSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">Confirm Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 8. RELOCATE ROOM MODAL -->
+  <div id="moveRoomModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Relocate Classroom Booking</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="moveRoomForm" class="space-y-4">
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-700 text-xs">
+          <span class="text-slate-500 block">Current Location:</span>
+          <strong id="moveCurrentRoomDisplay" class="text-slate-900 dark:text-white text-sm"></strong>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Select Target Room (Building · Room) *</label>
+          <select id="moveTargetRoomSelect" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required></select>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="moveRoomSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">Confirm Relocation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 9. FIND ALTERNATIVE ROOMS MODAL -->
+  <div id="findRoomsModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-lg w-full p-6 animate-scale-up max-h-[85vh] flex flex-col justify-between">
+      <div class="overflow-y-auto space-y-4 pr-1">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Find Vacant Alternative Rooms</h3>
+          <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+        </div>
+        <form id="findRoomsForm" class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">Start Time</label>
+            <input type="datetime-local" id="findRoomsStart" class="w-full text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-1">End Time</label>
+            <input type="datetime-local" id="findRoomsEnd" class="w-full text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+          </div>
+          <div class="col-span-2 flex items-center gap-3">
+            <input type="number" id="findRoomsCapacity" min="1" value="25" placeholder="Min Capacity" class="w-32 text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            <button type="submit" id="findRoomsSubmitBtn" class="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold transition">Search Vacant Rooms</button>
+          </div>
+        </form>
+
+        <div id="foundRoomsResults" class="space-y-2 pt-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. APPROVAL DECISION MODAL (Confirm Consequential Action) -->
+  <div id="approvalDecisionModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="approvalDecisionModalTitle" class="text-lg font-extrabold text-slate-900 dark:text-white">Confirm Approval Decision</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="approvalDecisionForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Decision Comment / Remarks (Optional)</label>
+          <textarea id="approvalDecisionComment" rows="3" placeholder="Enter comments explaining your decision..." class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"></textarea>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="approvalDecisionSubmitBtn" class="px-5 py-2 rounded-xl text-white font-bold text-xs transition">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 11. RESOLVE INCIDENT MODAL -->
+  <div id="resolveIncidentModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Confirm Incident Resolution</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="resolveIncidentForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Resolution Summary *</label>
+          <textarea id="resolveIncidentSummary" rows="3" placeholder="Explain the root cause and repair work completed..." class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required></textarea>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="resolveIncidentSubmitBtn" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">Resolve Incident</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 12. CREATE WORK ORDER MODAL -->
+  <div id="createWorkOrderModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Dispatch New Work Order</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="createWorkOrderForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Work Order Title *</label>
+          <input type="text" id="newWorkOrderTitle" placeholder="e.g. Replace failed circuit breaker" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Estimated Cost (₹)</label>
+          <input type="number" id="newWorkOrderCost" value="1000" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Allocate from Department Budget</label>
+          <select id="newWorkOrderBudget" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Required Spare Part (Inventory Reservation)</label>
+          <select id="newWorkOrderParts" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"></select>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="createWorkOrderSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">Dispatch Work Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 13. ADJUST STOCK MODAL -->
+  <div id="adjustStockModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Adjust Stock Balance</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="adjustStockForm" class="space-y-4">
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-700 text-xs flex justify-between">
+          <span id="adjustStockItemName" class="font-bold"></span>
+          <span id="adjustStockCurrentOnHand" class="font-mono"></span>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Delta Adjustment (+ or -) *</label>
+          <input type="number" id="adjustStockDelta" value="1" step="1" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Adjustment Reason (Mandatory for Audit Logs) *</label>
+          <input type="text" id="adjustStockReason" placeholder="e.g. Physical inventory count reconciliation" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="adjustStockSubmitBtn" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">Confirm Adjustment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 14. SET MEMBER MODAL (System Administrator) -->
+  <div id="setMemberModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="setMemberModalTitle" class="text-lg font-extrabold text-slate-900 dark:text-white">Provision Member</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="setMemberForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">User Auth UUID *</label>
+          <input type="text" id="setMemberUserId" placeholder="b0000000-0000-4000-8000-000000000001" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name *</label>
+          <input type="text" id="setMemberFullName" placeholder="e.g. Dr Asha Rao, Arun" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Role *</label>
+            <select id="setMemberRole" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+              <option value="technician">Technician</option>
+              <option value="department_manager">Department Manager</option>
+              <option value="facilities_admin">Facilities Admin</option>
+              <option value="procurement_approver">Procurement Approver</option>
+              <option value="system_admin">System Admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Department</label>
+            <select id="setMemberDepartment" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"></select>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="setMemberActive" class="rounded text-indigo-600 focus:ring-indigo-500" checked>
+          <label for="setMemberActive" class="text-xs font-semibold text-slate-700 dark:text-slate-300">Active College Access</label>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="setMemberSubmitBtn" class="px-5 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs transition">Save Membership</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 15. CREATE PURCHASE MODAL (Department Manager) -->
+  <div id="createPurchaseModal" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6 animate-scale-up">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Request Material Purchase Order</h3>
+        <button data-close-modal class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="managerPurchaseForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Stock Item *</label>
+          <select id="purchaseStockSelect" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Quantity *</label>
+            <input type="number" id="purchaseQuantity" min="1" value="10" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Total Cost (₹) *</label>
+            <input type="number" id="purchaseTotalCost" min="1" value="1500" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Department Budget *</label>
+          <select id="purchaseBudgetSelect" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Requisition Justification *</label>
+          <input type="text" id="purchaseReason" placeholder="e.g. Circuit breaker stock replenishment for lab maintenance" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900" required>
+        </div>
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+          <button type="submit" id="purchaseSubmitBtn" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition">Submit Requisition</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- ================= APPLICATION SCRIPTS ================= -->
+  <!-- Official Supabase JS v2 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/static/js/supabase-config.js"></script>
-  <script src="/static/js/smart-local.js"></script>
   <script src="/static/js/api.js"></script>
-  <script src="/static/js/dashboard.js"></script>
+  <script src="/static/js/report-photos.js"></script>
+  <script src="/static/js/buildings-rooms.js"></script>
+  <script src="/static/js/work-orders.js"></script>
+  <script src="/static/js/bookings.js"></script>
+  <script src="/static/js/approvals.js"></script>
+  <script src="/static/js/inventory.js"></script>
+  <script src="/static/js/sysadmin.js"></script>
+  <script src="/static/js/notifications.js"></script>
+  <script src="/static/js/operations.js"></script>
   <script src="/static/js/report-form.js"></script>
-  <script src="/static/js/admin.js"></script>
-  <script src="/static/js/analytics.js"></script>
   <script src="/static/js/myreports.js"></script>
-  <script src="/static/js/hero-scroll-animation.js"></script>
+  <script src="/static/js/analytics.js"></script>
+  <script src="/static/js/dashboard.js"></script>
   <script src="/static/js/app.js"></script>
-
 </body>
 </html>

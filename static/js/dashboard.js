@@ -1,388 +1,549 @@
 /**
- * FixIt User Dashboard Controller
- * Displays campus issue feed, multi-filter search, stats cards, and detail modal
+ * CampusOps Role-Based Dashboard Controller
+ * Renders completely distinct dashboard experiences and metrics for each role:
+ * Student, Faculty, Technician, Department Manager, Facilities Admin, Procurement Approver, System Admin.
  */
+
 const Dashboard = {
-  currentFilters: {
-    q: '',
-    status: '',
-    priority: '',
-    category: '',
-    location: ''
-  },
-  searchDebounce: null,
-
-  init() {
-    this.setupFilters();
-    this.loadQuickStats();
-    this.loadIssues();
+  async init() {
+    await this.renderRoleDashboard();
   },
 
-  setupFilters() {
-    const searchInput = document.getElementById('dashboardSearch');
-    const categorySelect = document.getElementById('filterCategory');
-    const clearBtn = document.getElementById('clearFiltersBtn');
-
-    // Debounced search
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        clearTimeout(this.searchDebounce);
-        this.searchDebounce = setTimeout(() => {
-          this.currentFilters.q = e.target.value.trim();
-          this.loadIssues();
-        }, 300);
-      });
-    }
-
-    // Category filter
-    if (categorySelect) {
-      categorySelect.addEventListener('change', (e) => {
-        this.currentFilters.category = e.target.value;
-        this.loadIssues();
-      });
-    }
-
-    // Status filter buttons
-    document.querySelectorAll('[data-filter-status]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = btn.getAttribute('data-filter-status');
-        this.currentFilters.status = val;
-        this.updateFilterButtonStyles('data-filter-status', val);
-        this.loadIssues();
-      });
-    });
-
-    // Priority filter buttons
-    document.querySelectorAll('[data-filter-priority]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = btn.getAttribute('data-filter-priority');
-        this.currentFilters.priority = val;
-        this.updateFilterButtonStyles('data-filter-priority', val);
-        this.loadIssues();
-      });
-    });
-
-    // Clear filters
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.resetFilters();
-      });
-    }
-  },
-
-  updateFilterButtonStyles(attr, activeVal) {
-    document.querySelectorAll(`[${attr}]`).forEach(btn => {
-      const val = btn.getAttribute(attr);
-      if (val === activeVal) {
-        btn.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
-        btn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-100');
-      } else {
-        btn.classList.remove('bg-slate-900', 'text-white', 'shadow-sm');
-        btn.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-100');
-      }
-    });
-  },
-
-  resetFilters() {
-    this.currentFilters = { q: '', status: '', priority: '', category: '', location: '' };
-    const searchInput = document.getElementById('dashboardSearch');
-    const categorySelect = document.getElementById('filterCategory');
-
-    if (searchInput) searchInput.value = '';
-    if (categorySelect) categorySelect.value = '';
-
-    this.updateFilterButtonStyles('data-filter-status', '');
-    this.updateFilterButtonStyles('data-filter-priority', '');
-    this.loadIssues();
-  },
-
-  async loadQuickStats() {
-    try {
-      const stats = await API.getStats();
-      const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-      };
-
-      const openCount = (stats.submitted_count || stats.pending_count || 0) + (stats.in_progress_count || 0);
-      setVal('statTotalOpen', openCount);
-      setVal('statPending', stats.submitted_count || stats.pending_count || 0);
-      setVal('statSubmitted', stats.submitted_count || stats.pending_count || 0);
-      setVal('statInProgress', stats.in_progress_count || 0);
-      setVal('statResolved', stats.resolved_count || 0);
-    } catch (err) {
-      console.warn('Quick stats load error:', err);
-    }
-  },
-
-  async loadIssues() {
-    const container = document.getElementById('issuesGridContainer');
-    const countLabel = document.getElementById('resultsCountLabel');
+  async renderRoleDashboard() {
+    const container = document.getElementById('dashboardContentContainer');
     if (!container) return;
 
-    container.innerHTML = `
-      <div class="col-span-full py-16 text-center text-slate-400">
-        <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-        </svg>
-        <p class="text-sm font-medium">Searching campus maintenance records...</p>
-      </div>
-    `;
+    const user = await API.getCurrentUser();
+    if (!user) {
+      this.renderPublicLanding(container);
+      return;
+    }
 
+    let member;
     try {
-      const res = await API.getIssues(this.currentFilters);
-      const issues = res.issues || [];
-
-      if (countLabel) {
-        countLabel.textContent = `Showing ${issues.length} of ${res.total} reported issue${res.total === 1 ? '' : 's'}`;
-      }
-
-      if (issues.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full py-16 px-4 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-            <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <i data-lucide="check-circle" class="w-7 h-7"></i>
-            </div>
-            <h3 class="text-base font-semibold text-slate-800">No matching issues found</h3>
-            <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">There are no maintenance complaints matching your current filter criteria.</p>
-            <button class="mt-4 px-4 py-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 rounded-xl" onclick="Dashboard.resetFilters()">
-              Clear Active Filters
-            </button>
-          </div>
-        `;
-        App.refreshIcons();
-        return;
-      }
-
-      container.innerHTML = '';
-      issues.forEach(issue => {
-        container.appendChild(this.createIssueCard(issue));
-      });
-
-      App.refreshIcons();
+      member = await API.getActiveMembership();
     } catch (err) {
       container.innerHTML = `
-        <div class="col-span-full py-12 text-center text-rose-500">
-          <p class="font-medium">Error loading complaints: ${err.message}</p>
-        </div>
-      `;
+        <div class="max-w-2xl mx-auto py-16 px-6 text-center bg-white dark:bg-slate-800 rounded-3xl border border-rose-200 shadow-xl">
+          <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="shield-alert" class="w-8 h-8"></i>
+          </div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">Access Verification Error</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">${this.escapeHtml(err.message)}</p>
+          <button onclick="App.signOut()" class="mt-6 px-6 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-sm">
+            Sign Out
+          </button>
+        </div>`;
+      if (window.App) window.App.refreshIcons();
+      return;
     }
+
+    if (!member) {
+      container.innerHTML = `
+        <div class="max-w-2xl mx-auto py-16 px-6 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl">
+          <div class="w-16 h-16 bg-amber-50 dark:bg-amber-950/50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="lock" class="w-8 h-8"></i>
+          </div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Your account does not have active CampusOps access</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-3 max-w-md mx-auto">
+            You are signed in as <strong>${this.escapeHtml(user.email)}</strong>, but no active college membership was found in <code>campusops_members</code>.
+            Please contact your System Administrator to provision your role.
+          </p>
+          <div class="mt-8 flex justify-center gap-3">
+            <button onclick="App.signOut()" class="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm transition">
+              Sign Out
+            </button>
+          </div>
+        </div>`;
+      if (window.App) window.App.refreshIcons();
+      return;
+    }
+
+    // Role-specific rendering
+    switch (member.role) {
+      case 'student':
+        await this.renderStudentDashboard(container, member);
+        break;
+      case 'faculty':
+        await this.renderFacultyDashboard(container, member);
+        break;
+      case 'technician':
+        await this.renderTechnicianDashboard(container, member);
+        break;
+      case 'department_manager':
+        await this.renderManagerDashboard(container, member);
+        break;
+      case 'facilities_admin':
+        await this.renderFacilitiesDashboard(container, member);
+        break;
+      case 'procurement_approver':
+        await this.renderProcurementDashboard(container, member);
+        break;
+      case 'system_admin':
+        await this.renderSysAdminDashboard(container, member);
+        break;
+      default:
+        container.innerHTML = `<p class="text-center py-12 text-slate-500">Unrecognized role: ${this.escapeHtml(member.role)}</p>`;
+    }
+
+    if (window.App) window.App.refreshIcons();
   },
 
-  createIssueCard(issue) {
-    const card = document.createElement('div');
-    const borderClass = {
-      'Critical': 'critical-border',
-      'High': 'high-border',
-      'Medium': 'medium-border',
-      'Low': 'low-border'
-    }[issue.priority] || 'medium-border';
-
-    card.className = `issue-card bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col justify-between cursor-pointer hover:border-slate-300 ${borderClass}`;
-    card.onclick = () => this.openIssueModal(issue.issue_code);
-
-    const hasPhoto = Boolean(issue.photo_url);
-
-    card.innerHTML = `
-      <div>
-        <!-- Card Header: Badges & ID -->
-        <div class="flex items-start justify-between gap-2 mb-3">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-bold font-mono px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
-              ${issue.issue_code}
-            </span>
-            ${App.getPriorityBadge(issue.priority)}
-            ${App.getStatusBadge(issue.status)}
+  renderPublicLanding(container) {
+    container.innerHTML = `
+      <div class="college-home">
+        <section class="college-hero" aria-labelledby="collegeWelcome">
+          <div class="college-hero-copy">
+            <p class="college-eyebrow">CAMPUS LIFE, CONNECTED</p>
+            <h1 id="collegeWelcome">A better day<br>on campus<br><em>starts here.</em></h1>
+            <p class="college-intro">Welcome to CampusOps Engineering College. Your shared space for campus services, classroom coordination and a well-cared-for learning environment.</p>
+            <div class="college-hero-actions">
+              <button class="college-primary" onclick="App.openModal('authModal')">Access your portal <span aria-hidden="true">↗</span></button>
+              <button class="college-secondary" onclick="document.getElementById('campusOverview').scrollIntoView({behavior:'smooth'})">Explore our campus <span aria-hidden="true">↓</span></button>
+            </div>
+            <p class="college-access-note">For students, faculty and college staff.</p>
           </div>
-          ${hasPhoto ? '<span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md text-[11px] font-semibold flex items-center gap-1 border border-indigo-100"><i data-lucide="camera" class="w-3.5 h-3.5"></i> Photo</span>' : ''}
+          <div class="college-scene" aria-hidden="true">
+            <div class="scene-orbit"></div><div class="scene-sun"></div>
+            <div class="scene-building scene-building-back"><span></span><span></span><span></span><span></span></div>
+            <div class="scene-building scene-building-front"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="scene-path"></div><div class="scene-tree scene-tree-one"></div><div class="scene-tree scene-tree-two"></div>
+            <div class="scene-caption"><span class="scene-dot"></span> MAIN CAMPUS <strong>A place to learn. A place to belong.</strong></div>
+          </div>
+        </section>
+        <section class="college-overview" id="campusOverview" aria-labelledby="campusOverviewTitle">
+          <div class="college-section-heading"><p class="college-eyebrow">OUR COLLEGE</p><h2 id="campusOverviewTitle">Spaces that support your day.</h2><p>From classrooms to laboratories, CampusOps brings everyday campus needs into one place.</p></div>
+          <div class="college-space-grid">
+            <article class="college-space-card"><span class="college-card-number">01 / LEARNING</span><i data-lucide="book-open" aria-hidden="true"></i><h3>Academic Block</h3><p>Classrooms and shared learning spaces, with room booking and facilities support for faculty and students.</p></article>
+            <article class="college-space-card"><span class="college-card-number">02 / DISCOVERY</span><i data-lucide="flask-conical" aria-hidden="true"></i><h3>Laboratory Block</h3><p>Practical learning spaces supported by equipment records, issue reporting and maintenance coordination.</p></article>
+            <article class="college-space-card"><span class="college-card-number">03 / CAMPUS CARE</span><i data-lucide="heart-handshake" aria-hidden="true"></i><h3>Here to help</h3><p>Report a facilities issue, follow progress and stay informed when maintenance affects your campus activities.</p></article>
+          </div>
+        </section>
+        <section class="college-service-strip" aria-labelledby="collegeServiceTitle">
+          <div><p class="college-eyebrow">EVERYDAY SUPPORT</p><h2 id="collegeServiceTitle">See something that needs attention?</h2><p>Sign in, choose the location and describe the issue. You can follow updates in My Reports.</p></div>
+          <button class="college-primary" onclick="App.openModal('authModal')">Sign in to get started <span aria-hidden="true">→</span></button>
+        </section>
+        <footer class="college-footer"><span>CampusOps Engineering College · Main Campus</span><span>Campus services, together.</span></footer>
+      </div>
+    `;
+    if (window.App) window.App.refreshIcons();
+  },
+
+  // 1. STUDENT DASHBOARD
+  async renderStudentDashboard(container, member) {
+    const reports = await API.getStudentReports(member.user_id);
+    const pending = reports.filter(r => r.status !== 'resolved' && r.status !== 'cancelled').length;
+    const resolved = reports.filter(r => r.status === 'resolved').length;
+
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-indigo-700 to-indigo-900 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-xs font-semibold uppercase tracking-wider border border-indigo-400/20">Student Portal</span>
+              <span class="text-xs text-indigo-200">${member.college?.name || 'CampusOps Engineering College'}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">Welcome, ${this.escapeHtml(member.full_name)}</h1>
+            <p class="text-xs sm:text-sm text-indigo-100/80 mt-1">Track your campus reports, view technician updates, and submit new maintenance requests.</p>
+          </div>
+          <button onclick="App.switchTab('report')" class="px-5 py-2.5 rounded-xl bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs shadow-md transition flex items-center gap-1.5 shrink-0">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i>
+            Submit New Report
+          </button>
         </div>
 
-        ${hasPhoto ? `
-          <!-- Photo Proof Preview in Public Feed Card -->
-          <div class="mb-3 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 relative group">
-            <img 
-              src="${issue.photo_url}" 
-              alt="Photo proof for ${issue.issue_code}" 
-              class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-              onerror="this.parentElement.style.display='none'"
-            >
-            <div class="absolute bottom-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[10px] rounded font-medium flex items-center gap-1">
-              <i data-lucide="camera" class="w-3 h-3"></i> Photo Proof
+        <!-- Metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Reports</span>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${reports.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">In Progress / Pending</span>
+            <div class="text-3xl font-black text-amber-600 mt-1">${pending}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Resolved</span>
+            <div class="text-3xl font-black text-emerald-600 mt-1">${resolved}</div>
+          </div>
+        </div>
+
+        <!-- Recent Reports Preview -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-900 dark:text-white text-lg">My Recent Reports</h3>
+            <button onclick="App.switchTab('myreports')" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+              View All Reports →
+            </button>
+          </div>
+          ${reports.length === 0 ? `
+            <div class="text-center py-8 text-slate-500 text-xs">
+              You haven't filed any reports yet. Click "Submit New Report" to report broken equipment or facilities issues.
             </div>
+          ` : `
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+              ${reports.slice(0, 3).map(r => `
+                <div class="py-3 flex items-center justify-between gap-3 text-xs">
+                  <div>
+                    <span class="font-bold text-slate-900 dark:text-white">${this.escapeHtml(r.description)}</span>
+                    <span class="text-slate-500 block text-[11px] mt-0.5">${this.escapeHtml(r.room_display || 'Campus')} · ${new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full capitalize text-[11px] font-semibold bg-slate-100 dark:bg-slate-700">
+                    ${r.status.replace('_', ' ')}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  },
+
+  // 2. FACULTY DASHBOARD
+  async renderFacultyDashboard(container, member) {
+    const [classes, bookings, incidentRooms] = await Promise.all([
+      API.getClasses(member.college_id, member.user_id),
+      API.getBookings(member.college_id),
+      Promise.resolve(API.client.from('campusops_incident_rooms').select('room_id').eq('college_id', member.college_id).is('ends_at', null)).then(result => { if (result.error) throw new Error(API.formatError(result.error)); return result; })
+    ]);
+
+    const badRoomIds = new Set((incidentRooms.data || []).map(r => r.room_id));
+    const affected = bookings.filter(b => b.kind === 'class' && b.status === 'confirmed' && new Date(b.ends_at) > new Date() && badRoomIds.has(b.room_id));
+
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 text-xs font-semibold uppercase tracking-wider border border-emerald-400/20">Faculty Portal</span>
+              <span class="text-xs text-emerald-200">${this.escapeHtml(member.department?.name || 'Engineering')}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">${this.escapeHtml(member.full_name)}</h1>
+            <p class="text-xs sm:text-sm text-emerald-100/80 mt-1">Manage scheduled lectures, relocate affected classes, and book available facilities.</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="App.switchTab('bookings')" class="px-4 py-2 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs shadow-md transition">
+              Room Bookings
+            </button>
+            <button onclick="App.switchTab('report')" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition">
+              Report Issue
+            </button>
+          </div>
+        </div>
+
+        <!-- Affected Classes Alert Banner if room hazard detected -->
+        ${affected.length > 0 ? `
+          <div class="p-5 rounded-3xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/60 shadow-sm flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-rose-900 dark:text-rose-200 text-base">Notice: Classroom Hazard Detected</h3>
+                <p class="text-xs text-rose-700 dark:text-rose-300 mt-1">
+                  <strong>${affected.length} of your scheduled classes</strong> are booked in rooms with active incidents .
+                  Please relocate to an alternative room.
+                </p>
+              </div>
+            </div>
+            <button onclick="App.switchTab('bookings')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition shrink-0">
+              Relocate Now
+            </button>
           </div>
         ` : ''}
 
-        <!-- Issue Title & Description -->
-        <h4 class="text-sm font-semibold text-slate-900 line-clamp-1 mb-1.5">${issue.title || issue.description}</h4>
-        <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-4">${issue.description}</p>
-      </div>
-
-      <!-- Card Footer -->
-      <div class="pt-3 border-t border-slate-100 flex flex-col gap-2 text-xs text-slate-500">
-        <div class="flex items-center justify-between">
-          <span class="flex items-center gap-1 font-medium text-slate-700 truncate">
-            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-            <span class="truncate">${issue.location} ${issue.specific_area ? '· ' + issue.specific_area : ''}</span>
-          </span>
-          <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-medium shrink-0">
-            ${issue.category}
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-          <span class="flex items-center gap-1 font-medium ${issue.people_affected > 1 ? 'text-indigo-600 font-semibold' : ''}">
-            <i data-lucide="users" class="w-3 h-3"></i>
-            ${issue.people_affected} affected/reported
-          </span>
-          <span>${App.formatDate(issue.created_at)}</span>
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">My Classes</span>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${classes.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Scheduled Sessions</span>
+            <div class="text-3xl font-black text-indigo-600 mt-1">${bookings.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Affected Classes</span>
+            <div class="text-3xl font-black text-rose-600 mt-1">${affected.length}</div>
+          </div>
         </div>
       </div>
     `;
-
-    return card;
   },
 
-  async openIssueModal(issueIdOrCode) {
-    try {
-      const issue = await API.getIssue(issueIdOrCode);
-      App.activeIssueId = issue.id;
+  // 3. TECHNICIAN DASHBOARD
+  async renderTechnicianDashboard(container, member) {
+    const workOrders = await API.getWorkOrders(member.college_id, member.user_id);
+    const blocked = workOrders.filter(w => w.status === 'blocked_parts' || w.status === 'waiting_approval').length;
+    const inProgress = workOrders.filter(w => w.status === 'in_progress').length;
 
-      // Populate Modal Fields
-      const setEl = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-      };
-
-      setEl('modalIssueCode', issue.issue_code);
-      setEl('modalTitle', issue.title || issue.description);
-      setEl('modalDescription', issue.description);
-      setEl('modalLocation', `${issue.location} ${issue.specific_area ? '· ' + issue.specific_area : ''}`);
-      setEl('modalCategory', issue.category);
-      setEl('modalCreatedAt', App.formatDate(issue.created_at));
-      setEl('modalAssignedTo', issue.assigned_to || 'Campus Facilities Unit');
-      setEl('modalPeopleCount', `${issue.people_affected} ${issue.people_affected === 1 ? 'person' : 'people'} affected`);
-
-      // Priority & Status Badges
-      const pBadge = document.getElementById('modalPriorityBadge');
-      if (pBadge) pBadge.innerHTML = App.getPriorityBadge(issue.priority);
-
-      const sBadge = document.getElementById('modalStatusBadge');
-      if (sBadge) sBadge.innerHTML = App.getStatusBadge(issue.status);
-
-      // Score rationale
-      const scoreBox = document.getElementById('modalScoreRationale');
-      if (scoreBox) {
-        const pLabel = issue.priority || 'Medium';
-        scoreBox.textContent = `Assigned Priority: ${pLabel} — ${issue.priority_rationale || 'Classified by safety and service impact rules.'}`;
-      }
-
-      // Photo and Video Media handling in Modal
-      const photoContainer = document.getElementById('modalPhotoContainer');
-      const photoImg = document.getElementById('modalPhotoImg');
-      if (photoContainer) {
-        let videoEl = document.getElementById('modalVideoPlayer');
-        if (issue.video_url) {
-          if (!videoEl) {
-            videoEl = document.createElement('video');
-            videoEl.id = 'modalVideoPlayer';
-            videoEl.className = 'w-full max-h-72 object-cover rounded-xl mt-3';
-            videoEl.controls = true;
-            photoContainer.appendChild(videoEl);
-          }
-          videoEl.src = issue.video_url;
-          videoEl.classList.remove('hidden');
-        } else if (videoEl) {
-          videoEl.classList.add('hidden');
-        }
-
-        if (issue.photo_url) {
-          if (photoImg) {
-            photoImg.src = issue.photo_url;
-            photoImg.classList.remove('hidden');
-          }
-        } else if (photoImg) {
-          photoImg.classList.add('hidden');
-        }
-
-        if (issue.photo_url || issue.video_url) {
-          photoContainer.classList.remove('hidden');
-        } else {
-          photoContainer.classList.add('hidden');
-        }
-      }
-
-      // Render Timeline
-      const timelineContainer = document.getElementById('modalTimelineContainer');
-      if (timelineContainer) {
-        timelineContainer.innerHTML = '';
-        (issue.timeline || []).forEach(t => {
-          const item = document.createElement('div');
-          item.className = 'flex items-start gap-3 relative pb-4 text-xs';
-          item.innerHTML = `
-            <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0 z-10">
-              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-amber-700 via-amber-800 to-slate-900 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 text-xs font-semibold uppercase tracking-wider border border-amber-400/20">Technician Dispatch</span>
+              <span class="text-xs text-amber-200">On Duty</span>
             </div>
-            <div class="flex-1 pt-0.5">
-              <div class="flex items-center justify-between">
-                <span class="font-semibold text-slate-800">${t.stage}</span>
-                <span class="text-slate-400 text-[11px]">${App.formatDate(t.created_at)}</span>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">${this.escapeHtml(member.full_name)}</h1>
+            <p class="text-xs sm:text-sm text-amber-100/80 mt-1">Assigned field maintenance orders, material stock holds, and work completion verification.</p>
+          </div>
+          <button onclick="App.switchTab('workorders')" class="px-5 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs shadow-md transition flex items-center gap-1.5 shrink-0">
+            <i data-lucide="wrench" class="w-4 h-4 text-amber-600"></i>
+            View My Work Orders
+          </button>
+        </div>
+
+        <!-- Blocked Parts Alert if any -->
+        ${blocked > 0 ? `
+          <div class="p-5 rounded-3xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/60 shadow-sm flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+                <i data-lucide="package-x" class="w-5 h-5"></i>
               </div>
-              <p class="text-slate-600 mt-0.5">${t.action}</p>
-              ${t.notes ? `<p class="text-slate-500 italic mt-0.5">"${t.notes}"</p>` : ''}
-              <span class="text-[10px] text-slate-400 font-medium">— by ${t.actor}</span>
+              <div>
+                <h3 class="font-extrabold text-rose-900 dark:text-rose-200 text-base">${blocked} Work Order(s) Blocked Waiting for Parts</h3>
+                <p class="text-xs text-rose-700 dark:text-rose-300 mt-1">
+                  E.g. Circuit breaker replacement requires restocking or purchase approval before work can proceed.
+                </p>
+              </div>
             </div>
-          `;
-          timelineContainer.appendChild(item);
-        });
-      }
+            <button onclick="App.switchTab('workorders')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition shrink-0">
+              Review Blocked Orders
+            </button>
+          </div>
+        ` : ''}
 
-      // Linked Reports List
-      const linkedBox = document.getElementById('modalLinkedReportsBox');
-      const linkedList = document.getElementById('modalLinkedList');
-      if (linkedBox && linkedList) {
-        if (issue.linked_reports && issue.linked_reports.length > 0) {
-          linkedBox.classList.remove('hidden');
-          linkedList.innerHTML = '';
-          issue.linked_reports.forEach((lr, idx) => {
-            const li = document.createElement('li');
-            li.className = 'text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200';
-            li.innerHTML = `
-              <div class="flex justify-between items-center text-[10px] text-slate-400 mb-0.5">
-                <span>Linked Report #${idx + 1}</span>
-                <span>${App.formatDate(lr.created_at)}</span>
-              </div>
-              <p>${lr.reporter_note || 'Duplicate report linked to this issue'}</p>
-            `;
-            linkedList.appendChild(li);
-          });
-        } else {
-          linkedBox.classList.add('hidden');
-        }
-      }
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned Orders</span>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${workOrders.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">In Progress</span>
+            <div class="text-3xl font-black text-indigo-600 mt-1">${inProgress}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Blocked (Parts / Approval)</span>
+            <div class="text-3xl font-black text-rose-600 mt-1">${blocked}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
 
-      // Action button: Link My Report
-      const linkReportBtn = document.getElementById('modalLinkMyReportBtn');
-      if (linkReportBtn) {
-        linkReportBtn.onclick = async () => {
-          try {
-            await API.linkReport(issue.id, 'Confirmed by campus user from issue details');
-            App.showToast('Your report was linked! Affected count updated.', 'success');
-            Dashboard.openIssueModal(issue.id);
-            Dashboard.loadIssues();
-            Dashboard.loadQuickStats();
-          } catch (err) {
-            App.showToast(err.message, 'error');
-          }
-        };
-      }
+  // 4. DEPARTMENT MANAGER DASHBOARD
+  async renderManagerDashboard(container, member) {
+    const [incidents, workOrders, approvals] = await Promise.all([
+      API.getIncidents(member.college_id, member.department_id),
+      API.getWorkOrders(member.college_id),
+      API.getApprovals(member.college_id, member.department_id)
+    ]);
 
-      App.openModal('issueDetailModal');
-      App.refreshIcons();
-    } catch (err) {
-      App.showToast(err.message || 'Could not load issue details', 'error');
-    }
+    const pendingApprovals = approvals.filter(a => a.stage === 1 && a.status === 'pending');
+
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-purple-800 to-indigo-950 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 text-xs font-semibold uppercase tracking-wider border border-purple-400/20">Department Management</span>
+              <span class="text-xs text-purple-200">${this.escapeHtml(member.department?.name || 'Department')}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">${this.escapeHtml(member.full_name)}</h1>
+            <p class="text-xs sm:text-sm text-purple-100/80 mt-1">Incident oversight, technician dispatch, work order creation, and Stage 1 approvals.</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="App.switchTab('operations')" class="px-4 py-2 rounded-xl bg-white text-purple-900 font-bold text-xs shadow-md transition">
+              Incident Queue
+            </button>
+            <button onclick="App.switchTab('approvals')" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition">
+              Pending Approvals (${pendingApprovals.length})
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Incidents</span>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${incidents.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-purple-600 uppercase tracking-wider">Stage 1 Approvals Pending</span>
+            <div class="text-3xl font-black text-purple-600 mt-1">${pendingApprovals.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Work Orders Dispatched</span>
+            <div class="text-3xl font-black text-indigo-600 mt-1">${workOrders.length}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  // 5. FACILITIES ADMINISTRATOR DASHBOARD
+  async renderFacilitiesDashboard(container, member) {
+    const [buildings, rooms, incidents, stock] = await Promise.all([
+      API.getBuildings(member.college_id),
+      API.getRooms(member.college_id),
+      API.getIncidents(member.college_id),
+      API.getStock(member.college_id)
+    ]);
+
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-2xl border border-indigo-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-xs font-semibold uppercase tracking-wider border border-rose-500/30">Facilities Administrator</span>
+              <span class="text-xs text-slate-300">${member.college?.name || 'CampusOps Engineering College'}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">${this.escapeHtml(member.full_name)} — Operations Central</h1>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">Full control over Buildings, Rooms, Assets, Inventory Movements, Technician Dispatch, and Incident SLAs.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="App.switchTab('rooms')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+              <i data-lucide="building" class="w-4 h-4"></i>
+              Buildings & Rooms
+            </button>
+            <button onclick="App.switchTab('inventory')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs transition flex items-center gap-1.5">
+              <i data-lucide="package" class="w-4 h-4"></i>
+              Inventory
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Buildings Managed</span>
+            <div class="text-3xl font-black text-indigo-600 mt-1">${buildings.length}</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">Dynamic in DB</span>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Rooms</span>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${rooms.length}</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">All capacity tracked</span>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Active Incidents</span>
+            <div class="text-3xl font-black text-rose-600 mt-1">${incidents.length}</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">SLA countdown</span>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Inventory Items</span>
+            <div class="text-3xl font-black text-emerald-600 mt-1">${stock.length}</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">Stock tracked</span>
+          </div>
+        </div>
+
+        <!-- Quick Access to Buildings and Rooms Screen (User Primary Requirement) -->
+        <div class="p-6 rounded-3xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Buildings and Rooms Management Screen</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              Add and edit Academic Block, Laboratory Block, and create new buildings or classrooms with equipment and capacity.
+            </p>
+          </div>
+          <button onclick="App.switchTab('rooms')" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 shrink-0">
+            <i data-lucide="door-open" class="w-4 h-4"></i>
+            Manage Buildings & Rooms
+          </button>
+        </div>
+      </div>
+    `;
+  },
+
+  // 6. PROCUREMENT APPROVER DASHBOARD
+  async renderProcurementDashboard(container, member) {
+    const approvals = await API.getApprovals(member.college_id);
+    const stage2 = approvals.filter(a => a.stage === 2 && a.status === 'pending');
+
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-blue-800 to-indigo-950 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-blue-500/30 text-blue-200 text-xs font-semibold uppercase tracking-wider border border-blue-400/20">Procurement & Financial Approvals</span>
+              <span class="text-xs text-blue-200">Stage 2 Authority</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">${this.escapeHtml(member.full_name)}</h1>
+            <p class="text-xs sm:text-sm text-blue-100/80 mt-1">Focused Stage 2 approval queue for materials purchase orders, major repair authorization, and emergency stock expenditures.</p>
+          </div>
+          <button onclick="App.switchTab('approvals')" class="px-5 py-2.5 rounded-xl bg-white text-blue-900 hover:bg-blue-50 font-bold text-xs shadow-md transition shrink-0">
+            Open Approval Queue
+          </button>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Stage 2 Requisitions Pending</span>
+            <div class="text-3xl font-black text-blue-600 mt-1">${stage2.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Approvals Cleared</span>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${approvals.filter(a => a.status === 'approved').length}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  // 7. SYSTEM ADMINISTRATOR DASHBOARD
+  async renderSysAdminDashboard(container, member) {
+    const members = await API.getMembers(member.college_id);
+
+    container.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header Banner -->
+        <div class="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-200 text-xs font-semibold uppercase tracking-wider border border-slate-600">System Administrator</span>
+              <span class="text-xs text-slate-300">Identity & Role Governance</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black mt-1">${this.escapeHtml(member.full_name)}</h1>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">Provision user roles, manage college access, and configure permissions via campusops_set_member.</p>
+          </div>
+          <button onclick="App.switchTab('sysadmin')" class="px-5 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs shadow-md transition shrink-0 flex items-center gap-1.5">
+            <i data-lucide="users" class="w-4 h-4 text-indigo-600"></i>
+            Manage Members
+          </button>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Provisioned Members</span>
+            <div class="text-3xl font-black text-indigo-600 mt-1">${members.length}</div>
+          </div>
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Active Status</span>
+            <div class="text-3xl font-black text-emerald-600 mt-1">${members.filter(m => m.active).length}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 };
 

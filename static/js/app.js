@@ -1,11 +1,10 @@
 /**
- * FixIt Core Application Controller
- * Handles tabs, authentication state, role-based navigation, global modals, toasts, and UI helpers
+ * CampusOps Core Application Controller
+ * Handles tabs, authentication state, dynamic role-based navigation, global modals, toasts, and UI helpers.
  */
 const App = {
   currentTab: 'dashboard',
   pendingRedirectTab: null,
-  activeIssueId: null,
 
   async init() {
     this.setupNavigation();
@@ -13,23 +12,24 @@ const App = {
     this.setupAuthListeners();
     this.refreshIcons();
 
+    // Initialize sub-controllers
+    if (window.BuildingsRooms) window.BuildingsRooms.init();
+    if (window.WorkOrders) window.WorkOrders.init();
+    if (window.Bookings) window.Bookings.init();
+    if (window.Approvals) window.Approvals.init();
+    if (window.Inventory) window.Inventory.init();
+    if (window.SysAdmin) window.SysAdmin.init();
+    if (window.ReportForm) window.ReportForm.init();
+    if (window.Operations) window.Operations.init();
+
     // Check existing authentication state on page load
     await this.checkAuthState();
 
     // Handle initial navigation tab from URL hash
-    const hash = window.location.hash.replace('#', '');
-    if (['dashboard', 'report', 'admin', 'analytics', 'myreports'].includes(hash)) {
-      await this.switchTab(hash);
-    } else {
-      await this.switchTab('dashboard');
-    }
+    const hash = window.location.hash.replace('#', '') || 'dashboard';
+    await this.switchTab(hash);
 
-    // Initialize sub-controllers
-    if (window.HeroScrollAnimation) window.HeroScrollAnimation.init();
-    if (window.Dashboard) window.Dashboard.init();
-    if (window.ReportForm) window.ReportForm.init();
-    if (window.Admin) window.Admin.init();
-    if (window.Analytics) window.Analytics.init();
+
   },
 
   refreshIcons() {
@@ -39,11 +39,11 @@ const App = {
   },
 
   setupNavigation() {
-    document.querySelectorAll('[data-tab-target]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const tab = btn.getAttribute('data-tab-target');
-        await this.switchTab(tab);
-      });
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-tab-target]');
+      if (!button) return;
+      event.preventDefault();
+      await this.switchTab(button.dataset.tabTarget);
     });
 
     // Mobile nav menu toggle
@@ -57,53 +57,28 @@ const App = {
 
     // Handle URL hash changes directly
     window.addEventListener('hashchange', async () => {
-      const hash = window.location.hash.replace('#', '');
-      if (['dashboard', 'report', 'admin', 'analytics', 'myreports'].includes(hash) && hash !== this.currentTab) {
+      const hash = window.location.hash.replace('#', '') || 'dashboard';
+      if (hash !== this.currentTab) {
         await this.switchTab(hash);
       }
     });
   },
 
   async switchTab(tabName) {
-    // 1. Role-based Route Protection for Admin Tab
-    if (tabName === 'admin') {
-      const isAdmin = await API.isAdmin();
-      if (!isAdmin) {
-        this.showToast('Access Denied: Facility Administrator permissions required.', 'error');
-        if (this.currentTab !== 'dashboard') {
-          await this.switchTab('dashboard');
-        }
-        return;
-      }
-    }
+    const user = await API.getCurrentUser();
+    const member = user ? await API.getActiveMembership().catch(() => null) : null;
 
-    // 2. Role-based Protection for Reporting Tab (Admins cannot report, students can)
-    if (tabName === 'report') {
-      const isAdmin = await API.isAdmin();
-      if (isAdmin) {
-        this.showToast('Admins cannot access student issue reporting.', 'info');
-        if (this.currentTab === 'report' || !this.currentTab) {
-          await this.switchTab('admin');
-        }
-        return;
-      }
-      const user = await API.getCurrentUser();
+    // Check route permissions
+    const allowed = this.isTabAllowedForRole(tabName, member ? member.role : 'public');
+    if (!allowed) {
       if (!user) {
-        this.pendingRedirectTab = 'report';
-        this.showToast('Please sign in as a student to report an issue.', 'info');
-        this.openModal('studentAuthModal');
-        return;
+        this.showToast('Please sign in to access this section.', 'info');
+        this.openModal('authModal');
+      } else {
+        this.showToast(`Your current role does not have permission to view #${tabName}.`, 'error');
       }
-    }
-
-    // 3. Role-based Route Protection for My Reports Tab (Admins cannot access, return to Campus Feed)
-    if (tabName === 'myreports') {
-      const isAdmin = await API.isAdmin();
-      if (isAdmin) {
-        if (this.currentTab !== 'dashboard') {
-          await this.switchTab('dashboard');
-        }
-        return;
+      if (tabName !== 'dashboard') {
+        tabName = 'dashboard';
       }
     }
 
@@ -121,43 +96,59 @@ const App = {
       activeSec.classList.add('animate-fade-in');
     }
 
-    // Update active nav button state
+    // Update active nav button styles
     document.querySelectorAll('[data-tab-target]').forEach(btn => {
       const target = btn.getAttribute('data-tab-target');
       if (target === tabName) {
-        btn.classList.add('bg-indigo-50', 'text-indigo-600', 'font-semibold');
-        btn.classList.remove('text-slate-600', 'hover:bg-slate-50');
+        btn.classList.add('bg-indigo-50', 'text-indigo-600', 'font-semibold', 'dark:bg-slate-700', 'dark:text-indigo-400');
+        btn.classList.remove('text-slate-600', 'hover:bg-slate-50', 'dark:text-slate-300');
       } else {
-        btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'font-semibold');
-        btn.classList.add('text-slate-600', 'hover:bg-slate-50');
+        btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'font-semibold', 'dark:bg-slate-700', 'dark:text-indigo-400');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-50', 'dark:text-slate-300');
       }
     });
 
-    // Close mobile nav if open
+    // Close mobile nav
     const mobileNav = document.getElementById('mobileNav');
     if (mobileNav && !mobileNav.classList.contains('hidden')) {
       mobileNav.classList.add('hidden');
     }
 
-    // Trigger tab specific refreshes
-    if (tabName === 'dashboard') {
-      if (window.Dashboard) {
-        window.Dashboard.loadIssues();
-        window.Dashboard.loadQuickStats();
-      }
-      if (window.HeroScrollAnimation) {
-        window.HeroScrollAnimation.onTabActivated('dashboard');
-      }
-    } else {
-      if (window.HeroScrollAnimation) {
-        window.HeroScrollAnimation.onTabDeactivated();
-      }
-      if (tabName === 'admin' && window.Admin) {
-        window.Admin.loadAdminData();
-      } else if (tabName === 'analytics' && window.Analytics) {
-        window.Analytics.loadAnalytics();
-      } else if (tabName === 'myreports' && window.MyReports) {
-        window.MyReports.load();
+    try {
+    // Trigger tab specific data loads
+    if (tabName === 'dashboard' && window.Dashboard) {
+      await window.Dashboard.renderRoleDashboard();
+    } else if (tabName === 'report' && window.ReportForm) {
+      await window.ReportForm.loadReferenceData();
+    } else if (tabName === 'myreports' && window.MyReports) {
+      await window.MyReports.load();
+    } else if (tabName === 'rooms' && window.BuildingsRooms) {
+      await window.BuildingsRooms.loadData();
+    } else if (tabName === 'workorders' && window.WorkOrders) {
+      await window.WorkOrders.loadData();
+    } else if (tabName === 'bookings' && window.Bookings) {
+      await window.Bookings.loadData();
+    } else if (tabName === 'operations' && window.Operations) {
+      await window.Operations.loadData();
+    } else if (tabName === 'approvals' && window.Approvals) {
+      await window.Approvals.loadData();
+    } else if (tabName === 'inventory' && window.Inventory) {
+      await window.Inventory.loadData();
+    } else if (tabName === 'sysadmin' && window.SysAdmin) {
+      await window.SysAdmin.loadData();
+    } else if (tabName === 'notifications' && window.Notifications) {
+      await window.Notifications.loadData();
+    } else if (tabName === 'analytics' && window.Analytics) {
+      await window.Analytics.loadAnalytics();
+    }
+
+    } catch (error) {
+      console.error('Unable to load section:', error);
+      if (activeSec) {
+        let notice = activeSec.querySelector('.section-load-error');
+        if (!notice) { notice = document.createElement('div'); notice.className='section-load-error mb-5 p-4 rounded-xl bg-rose-50 text-rose-800 border border-rose-200'; activeSec.prepend(notice); }
+        notice.innerHTML = '<strong>We couldn’t load this page.</strong><p class="text-sm mt-1">' + this.escapeHtml(error.message) + '</p><button class="mt-3 underline text-sm font-semibold" type="button">Try again</button>';
+        notice.querySelector('button').onclick=() => { notice.remove(); this.switchTab(tabName); };
       }
     }
 
@@ -165,28 +156,43 @@ const App = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
+  isTabAllowedForRole(tab, role) {
+    if (tab === 'dashboard') return true;
+    if (role === 'public') return false;
+
+    switch (role) {
+      case 'student':
+        return ['dashboard', 'report', 'myreports', 'notifications'].includes(tab);
+      case 'faculty':
+        return ['dashboard', 'bookings', 'report', 'myreports', 'notifications'].includes(tab);
+      case 'technician':
+        return ['dashboard', 'workorders', 'notifications'].includes(tab);
+      case 'department_manager':
+        return ['dashboard', 'operations', 'approvals', 'report', 'analytics', 'notifications'].includes(tab);
+      case 'facilities_admin':
+        return ['dashboard', 'rooms', 'operations', 'workorders', 'inventory', 'bookings', 'approvals', 'analytics', 'notifications'].includes(tab);
+      case 'procurement_approver':
+        return ['dashboard', 'approvals', 'notifications'].includes(tab);
+      case 'system_admin':
+        return ['dashboard', 'sysadmin', 'notifications'].includes(tab);
+      default:
+        return false;
+    }
+  },
+
   setupModalListeners() {
-    // Backdrop close
     document.querySelectorAll('.modal-backdrop').forEach(bd => {
       bd.addEventListener('click', (e) => {
-        if (e.target === bd) {
-          this.closeModals();
-        }
+        if (e.target === bd) this.closeModals();
       });
     });
 
-    // Close button triggers
     document.querySelectorAll('[data-close-modal]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.closeModals();
-      });
+      btn.addEventListener('click', () => this.closeModals());
     });
 
-    // Escape key
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        this.closeModals();
-      }
+      if (e.key === 'Escape') this.closeModals();
     });
   },
 
@@ -196,9 +202,6 @@ const App = {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
-      if (window.HeroScrollAnimation) {
-        window.HeroScrollAnimation.stopRaf();
-      }
       this.refreshIcons();
     }
   },
@@ -209,53 +212,22 @@ const App = {
       modal.classList.remove('flex');
     });
     document.body.style.overflow = '';
-    if (this.currentTab === 'dashboard' && window.HeroScrollAnimation) {
-      window.HeroScrollAnimation.onTabActivated('dashboard');
-    }
   },
 
   setupAuthListeners() {
     const openBtn = document.getElementById('authModalOpenBtn');
     const signOutBtn = document.getElementById('authSignOutBtn');
-    const tabSignIn = document.getElementById('authTabSignIn');
-    const tabSignUp = document.getElementById('authTabSignUp');
-    const form = document.getElementById('studentAuthForm');
-    const signUpFields = document.getElementById('authSignUpFields');
-    const modalTitle = document.getElementById('authModalTitle');
-    const submitBtnText = document.getElementById('authSubmitBtnText');
-
-    let isSignUpMode = false;
+    const form = document.getElementById('authForm');
 
     if (openBtn) {
-      openBtn.addEventListener('click', async () => {
-        const user = await API.getCurrentUser();
-        if (!user) {
-          this.openModal('studentAuthModal');
-        }
+      openBtn.addEventListener('click', () => {
+        this.openModal('authModal');
       });
     }
 
-    if (tabSignIn && tabSignUp) {
-      tabSignIn.addEventListener('click', () => {
-        isSignUpMode = false;
-        tabSignIn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabSignIn.classList.remove('text-slate-600');
-        tabSignUp.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabSignUp.classList.add('text-slate-600');
-        if (signUpFields) signUpFields.classList.add('hidden');
-        if (modalTitle) modalTitle.textContent = 'Student Portal Sign In';
-        if (submitBtnText) submitBtnText.textContent = 'Sign In to FixIt';
-      });
-
-      tabSignUp.addEventListener('click', () => {
-        isSignUpMode = true;
-        tabSignUp.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabSignUp.classList.remove('text-slate-600');
-        tabSignIn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabSignIn.classList.add('text-slate-600');
-        if (signUpFields) signUpFields.classList.remove('hidden');
-        if (modalTitle) modalTitle.textContent = 'Register Student Account';
-        if (submitBtnText) submitBtnText.textContent = 'Create Account';
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
+        await this.signOut();
       });
     }
 
@@ -264,8 +236,6 @@ const App = {
         e.preventDefault();
         const email = document.getElementById('authEmail')?.value.trim();
         const password = document.getElementById('authPassword')?.value;
-        const fullName = document.getElementById('authFullName')?.value.trim();
-        const studentId = document.getElementById('authStudentId')?.value.trim();
         const submitBtn = document.getElementById('authSubmitBtn');
 
         if (!email || !password) {
@@ -275,67 +245,52 @@ const App = {
 
         if (submitBtn) {
           submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⏳</span> Validating...';
+          submitBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Validating credentials...';
         }
 
         try {
-          if (isSignUpMode) {
-            await API.signUp(email, password, fullName, studentId);
-            this.showToast('Account registered successfully! You may now sign in.', 'success');
-            // Switch to sign in tab
-            if (tabSignIn) tabSignIn.click();
-          } else {
-            await API.signIn(email, password);
-            this.showToast('Signed in successfully!', 'success');
-            this.closeModals();
-            await this.checkAuthState();
-
-            // Continue pending action if any
-            if (this.pendingRedirectTab) {
-              const target = this.pendingRedirectTab;
-              this.pendingRedirectTab = null;
-              await this.switchTab(target);
-            }
-          }
+          await API.signIn(email, password);
+          this.showToast('Signed in successfully!', 'success');
+          this.closeModals();
+          await this.checkAuthState();
+          await this.switchTab('dashboard');
         } catch (err) {
           this.showToast(err.message || 'Authentication error', 'error');
         } finally {
           if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = isSignUpMode ? 'Create Account' : 'Sign In to FixIt';
-            this.refreshIcons();
+            submitBtn.textContent = 'Sign In to CampusOps';
           }
         }
       });
     }
 
-    if (signOutBtn) {
-      signOutBtn.addEventListener('click', async () => {
-        await API.signOut();
-        this.showToast('Signed out successfully.', 'info');
-        await this.checkAuthState();
-        await this.switchTab('dashboard');
-      });
-    }
-
     // Subscribe to auth state changes in Supabase JS v2
     if (window.supabaseClient) {
-      window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        await this.checkAuthState();
+      window.supabaseClient.auth.onAuthStateChange((event, session) => {
+        // Supabase holds its auth lock while invoking this callback.
+        // Defer API calls to avoid blocking sign-in or token refresh.
+        if (!['SIGNED_IN', 'TOKEN_REFRESHED', 'SIGNED_OUT', 'USER_UPDATED'].includes(event)) return;
+        API._currentUser = session?.user || null;
+        API._currentMember = null;
+        clearTimeout(this.authRefreshTimer);
+        this.authRefreshTimer = setTimeout(async () => {
+          try {
+            await this.checkAuthState();
+            if (event === 'SIGNED_OUT') await this.switchTab('dashboard');
+          } catch (error) {
+            this.showToast(error.message || 'Unable to refresh your session.', 'error');
+          }
+        }, 0);
       });
     }
   },
 
-  getUserDisplayName(user) {
-    if (!user) return 'Student';
-    let name = '';
-    if (user.user_metadata) {
-      name = user.user_metadata.full_name || user.user_metadata.name || '';
-    }
-    if (!name || typeof name !== 'string' || !name.trim() || name === 'undefined' || name === 'null' || name === 'NaN') {
-      name = user.email || 'Student';
-    }
-    return String(name).trim();
+  async signOut() {
+    await API.signOut();
+    this.showToast('Signed out successfully.', 'info');
+    await this.checkAuthState();
+    await this.switchTab('dashboard');
   },
 
   async checkAuthState() {
@@ -348,203 +303,189 @@ const App = {
     if (!window.supabaseClient) return;
 
     try {
-      // Supabase session is the single source of truth
       const user = await API.getCurrentUser();
-      const isAdmin = user ? await API.isAdmin() : false;
-
-      // Enforce Admin Tab visibility strictly based on authorization
-      document.querySelectorAll('[data-tab-target="admin"]').forEach(el => {
-        if (isAdmin) {
-          el.classList.remove('hidden');
-        } else {
-          el.classList.add('hidden');
-        }
-      });
-
-      // Hide student reporting controls from admins; keep available for students & visitors
-      document.querySelectorAll('[data-tab-target="report"]').forEach(el => {
-        if (isAdmin) {
-          el.classList.add('hidden');
-        } else {
-          el.classList.remove('hidden');
-        }
-      });
-
-      // Hide My Reports navigation tab whenever an admin is signed in; keep available for signed-in students
-      document.querySelectorAll('[data-tab-target="myreports"]').forEach(el => {
-        if (isAdmin) {
-          el.classList.add('hidden');
-        } else {
-          el.classList.remove('hidden');
-        }
-      });
-
-      // If currently on report tab when verified as admin, redirect to admin management
-      if (isAdmin && this.currentTab === 'report') {
-        await this.switchTab('admin');
-      }
-
-      // If currently on myreports tab when verified as admin, return to Campus Feed
-      if (isAdmin && (this.currentTab === 'myreports' || window.location.hash === '#myreports')) {
-        await this.switchTab('dashboard');
-      }
+      let member = null;
 
       if (user) {
-        // Authenticated Session: Show user profile name & Log Out control; Never open Sign In screen
-        const displayName = this.getUserDisplayName(user);
-
-        if (authUserName) {
-          authUserName.textContent = isAdmin ? `${displayName} (Admin)` : displayName;
-        }
-
-        // Hide Sign In button
-        if (authBtn) authBtn.classList.add('hidden');
-
-        // Show Signed In group (User name + Log Out)
-        if (signedInGroup) signedInGroup.classList.remove('hidden');
-
-        if (roleIndicator) {
-          roleIndicator.textContent = isAdmin ? 'Facility Admin' : 'Campus Student';
-        }
-        if (roleBadge) roleBadge.classList.remove('hidden');
-
-        // Autofill email in complaint form if empty
-        const contactInput = document.getElementById('reportContact');
-        if (contactInput && !contactInput.value) {
-          contactInput.value = user.email || '';
-        }
-      } else {
-        // Signed out state: Only show Sign In button
-        if (authBtn) authBtn.classList.remove('hidden');
-        if (signedInGroup) signedInGroup.classList.add('hidden');
-
-        if (roleIndicator) roleIndicator.textContent = 'Public Visitor';
-        if (roleBadge) roleBadge.classList.remove('hidden');
-
-        // If on admin tab while signed out, redirect to dashboard
-        if (this.currentTab === 'admin') {
-          await this.switchTab('dashboard');
-        }
+        member = await API.getActiveMembership().catch(() => null);
       }
 
-      this.refreshIcons();
+      if (user && member) {
+        if (authBtn) authBtn.classList.add('hidden');
+        if (signedInGroup) signedInGroup.classList.remove('hidden');
+        if (authUserName) authUserName.textContent = member.full_name || user.email;
+
+        const roleLabels = {
+          student: 'Student',
+          faculty: 'Faculty',
+          technician: 'Technician',
+          department_manager: 'Dept Manager',
+          facilities_admin: 'Facilities Admin',
+          procurement_approver: 'Procurement',
+          system_admin: 'System Admin'
+        };
+
+        if (roleIndicator) {
+          roleIndicator.textContent = roleLabels[member.role] || member.role;
+        }
+        if (roleBadge) {
+          roleBadge.classList.remove('hidden');
+          roleBadge.className = 'hidden sm:flex px-2.5 py-1 rounded-xl text-[11px] font-bold border ' + this.getRoleBadgeClass(member.role);
+        }
+      } else if (user && !member) {
+        // Authenticated but no active college membership
+        if (authBtn) authBtn.classList.add('hidden');
+        if (signedInGroup) signedInGroup.classList.remove('hidden');
+        if (authUserName) authUserName.textContent = user.email;
+        if (roleIndicator) roleIndicator.textContent = 'No Membership';
+        if (roleBadge) {
+          roleBadge.classList.remove('hidden');
+          roleBadge.className = 'hidden sm:flex px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200';
+        }
+      } else {
+        // Signed out
+        if (authBtn) authBtn.classList.remove('hidden');
+        if (signedInGroup) signedInGroup.classList.add('hidden');
+        if (roleBadge) roleBadge.classList.add('hidden');
+      }
+
+      document.getElementById('notificationNavButton')?.classList.toggle('hidden', !member);
+      // Re-render Dynamic Navigation Tabs according to current role
+      this.renderNavTabs(member ? member.role : 'public');
     } catch (e) {
-      console.warn('Auth state check error:', e);
+      console.warn('checkAuthState error:', e);
     }
   },
 
-  showToast(message, type = 'success') {
-    const toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) return;
+  getRoleBadgeClass(role) {
+    switch (role) {
+      case 'student': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'faculty': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'technician': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'department_manager': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'facilities_admin': return 'bg-rose-50 text-rose-700 border-rose-300 font-extrabold';
+      case 'procurement_approver': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'system_admin': return 'bg-slate-800 text-white border-slate-700';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  },
+
+  renderNavTabs(role) {
+    const desktopNav = document.getElementById('desktopNav');
+    const mobileNavList = document.getElementById('mobileNavList');
+
+    const tabsByRole = {
+      public: [
+        { id: 'dashboard', label: 'Home', icon: 'layout-grid' }
+      ],
+      student: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
+        { id: 'report', label: 'Submit Report', icon: 'plus-circle' },
+        { id: 'myreports', label: 'My Reports', icon: 'list' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
+      faculty: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
+        { id: 'bookings', label: 'Classes & Bookings', icon: 'calendar' },
+        { id: 'report', label: 'Report Issue', icon: 'plus-circle' },
+        { id: 'myreports', label: 'My Reports', icon: 'list' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
+      technician: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
+        { id: 'workorders', label: 'My Work Orders', icon: 'wrench' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
+      department_manager: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
+        { id: 'operations', label: 'Incident Queue', icon: 'alert-triangle' },
+        { id: 'approvals', label: 'Approvals', icon: 'file-check' },
+        { id: 'report', label: 'Report Issue', icon: 'plus-circle' },
+        { id: 'analytics', label: 'Analytics', icon: 'bar-chart-3' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
+      facilities_admin: [
+        { id: 'dashboard', label: 'Operations', icon: 'layout-grid' },
+        { id: 'rooms', label: 'Buildings & Rooms', icon: 'door-open' },
+        { id: 'operations', label: 'Incidents & Work', icon: 'shield-alert' },
+        { id: 'workorders', label: 'All Work Orders', icon: 'wrench' },
+        { id: 'inventory', label: 'Inventory', icon: 'package' },
+        { id: 'bookings', label: 'Room Schedule', icon: 'calendar' },
+        { id: 'approvals', label: 'Approvals', icon: 'file-check' },
+        { id: 'analytics', label: 'Analytics', icon: 'bar-chart-3' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
+      procurement_approver: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
+        { id: 'approvals', label: 'Approval Queue', icon: 'file-check' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
+      system_admin: [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
+        { id: 'sysadmin', label: 'Account Memberships', icon: 'users' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ]
+    };
+
+    const tabs = tabsByRole[role] || tabsByRole.public;
+
+    if (desktopNav) {
+      desktopNav.innerHTML = tabs.map(t => `
+        <button data-tab-target="${t.id}" class="px-3.5 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1.5 ${t.id === this.currentTab ? 'bg-indigo-50 text-indigo-600 font-semibold dark:bg-slate-700 dark:text-indigo-400' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'}">
+          <i data-lucide="${t.icon}" class="w-4 h-4"></i>
+          <span>${t.label}</span>
+        </button>
+      `).join('');
+    }
+
+    if (mobileNavList) {
+      mobileNavList.innerHTML = tabs.map(t => `
+        <button data-tab-target="${t.id}" class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2.5 ${t.id === this.currentTab ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50'}">
+          <i data-lucide="${t.icon}" class="w-4 h-4"></i>
+          <span>${t.label}</span>
+        </button>
+      `).join('');
+    }
+
+    this.refreshIcons();
+  },
+
+  showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
 
     const toast = document.createElement('div');
-    const colorClasses = {
-      success: 'bg-emerald-600 text-white border-emerald-700',
-      error: 'bg-rose-600 text-white border-rose-700',
-      warning: 'bg-amber-600 text-white border-amber-700',
-      info: 'bg-indigo-600 text-white border-indigo-700'
-    }[type] || 'bg-slate-800 text-white border-slate-900';
+    const bgColors = {
+      success: 'bg-emerald-600 text-white',
+      error: 'bg-rose-600 text-white',
+      info: 'bg-indigo-600 text-white'
+    };
 
-    toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium animate-fade-in ${colorClasses}`;
-
-    let iconName = 'check-circle-2';
-    if (type === 'error') iconName = 'alert-triangle';
-    if (type === 'info') iconName = 'info';
-
+    toast.className = `p-4 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-semibold animate-slide-up transition-all ${bgColors[type] || bgColors.info}`;
     toast.innerHTML = `
-      <i data-lucide="${iconName}" class="w-5 h-5 shrink-0"></i>
-      <span class="flex-1">${message}</span>
-      <button class="text-white/80 hover:text-white p-1" onclick="this.parentElement.remove()">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
+      <span>${this.escapeHtml(message)}</span>
+      <button onclick="this.parentElement.remove()" class="ml-auto opacity-75 hover:opacity-100 font-bold">✕</button>
     `;
 
-    toastContainer.appendChild(toast);
-    this.refreshIcons();
-
+    container.appendChild(toast);
     setTimeout(() => {
-      if (toast && toast.parentElement) {
-        toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
-        setTimeout(() => toast.remove(), 300);
-      }
+      if (toast.parentElement) toast.remove();
     }, 4500);
   },
 
-  getPriorityBadge(priority, showIcon = true) {
-    const badges = {
-      'Critical': {
-        class: 'badge-critical',
-        label: 'Critical',
-        icon: 'alert-octagon'
-      },
-      'High': {
-        class: 'badge-high',
-        label: 'High',
-        icon: 'alert-triangle'
-      },
-      'Medium': {
-        class: 'badge-medium',
-        label: 'Medium',
-        icon: 'clock'
-      },
-      'Low': {
-        class: 'badge-low',
-        label: 'Low',
-        icon: 'info'
-      }
-    };
-
-    const b = badges[priority] || badges['Medium'];
-    const iconHtml = showIcon ? `<i data-lucide="${b.icon}" class="w-3 h-3"></i>` : '';
-    return `<span class="badge ${b.class}">${iconHtml} ${b.label}</span>`;
-  },
-
-  getStatusBadge(status) {
-    const raw = (status || 'Submitted').trim();
-    const s = raw.toLowerCase();
-    let badgeClass = 'badge-submitted';
-    let icon = 'clock';
-    let label = 'Submitted';
-
-    if (s.includes('resolved') || s.includes('done') || s.includes('closed')) {
-      badgeClass = 'badge-resolved';
-      icon = 'check-circle';
-      label = 'Resolved';
-    } else if (s.includes('progress') || s.includes('working')) {
-      badgeClass = 'badge-in-progress';
-      icon = 'wrench';
-      label = 'In Progress';
-    } else if (s.includes('submit') || s.includes('pend') || s.includes('open')) {
-      badgeClass = 'badge-submitted';
-      icon = 'clock';
-      label = 'Submitted';
-    } else {
-      label = raw;
-    }
-
-    return `<span class="badge ${badgeClass}"><i data-lucide="${icon}" class="w-3 h-3"></i> ${label}</span>`;
-  },
-
-  formatDate(dateStr) {
-    if (!dateStr) return 'Recently';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-
-    const now = new Date();
-    const diffSec = Math.floor((now - d) / 1000);
-
-    if (diffSec < 60) return 'Just now';
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-    if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
-
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 };
 
 window.App = App;
 
-// Bootstrap on DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
 });
