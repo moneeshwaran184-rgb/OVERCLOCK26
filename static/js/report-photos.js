@@ -100,14 +100,14 @@ const ReportPhotos = {
     const request = Symbol(); container._incidentRequest = request;
     container.textContent = 'Loading photos…'; App.openModal('incidentPhotosModal');
     try {
-      const {data,error} = await API.client.from('campusops_reports').select('id,description').eq('incident_id', incidentId).order('created_at');
+      const {data,error} = await API.client.from('campusops_reports').select('id,description,equipment_description').eq('incident_id', incidentId).order('created_at');
       if (error) throw new Error(API.formatError(error));
       if (container._incidentRequest !== request) return;
       container.replaceChildren();
       if (!data.length) container.textContent = 'No accessible reports for this incident.';
       for (const report of data) {
         const section = document.createElement('section'); section.className = 'py-3 border-b border-slate-200';
-        const heading = document.createElement('p'); heading.className = 'text-sm mb-2'; heading.textContent = report.description;
+        const heading = document.createElement('p'); heading.className = 'text-sm mb-2'; heading.textContent = report.description + (report.equipment_description ? " — Equipment: " + report.equipment_description : "");
         const photos = document.createElement('div'); section.append(heading, photos); container.append(section);
         await this.render(photos, report.id);
       }

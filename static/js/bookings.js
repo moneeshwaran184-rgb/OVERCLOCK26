@@ -5,18 +5,24 @@
  */
 
 const Bookings = {
+  localInput(value) {
+    const date = new Date(value);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  },
   classes: [],
   bookings: [],
   affectedClasses: [],
   rooms: [],
   campuses: [],
-  selectedBookingId: null,
+  selectedBookingId: null, bookingOptions: [], bookingQuery: 0, bookingSubmitting: false,
 
   async init() {
     this.bindEvents();
   },
 
   bindEvents() {
+    for(const id of ['bookRoomStart','bookRoomEnd','bookRoomAttendees','bookRoomClass']) document.getElementById(id)?.addEventListener('change',()=>{if(id==='bookRoomClass') this.syncBookingClass();this.refreshBookingOptions();});
+    document.getElementById('bookRoomSelect')?.addEventListener('change',()=>this.updateBookingHint());
     const bookRoomBtn = document.getElementById('openBookRoomModalBtn');
     if (bookRoomBtn) {
       bookRoomBtn.addEventListener('click', () => this.openBookRoomModal());
@@ -63,12 +69,13 @@ const Bookings = {
       this.campuses = campuses || [];
 
       // Detect affected classes: classes whose assigned room is in active incidentRooms
-      const badRoomIds = new Set((incidentRooms || []).map(ir => ir.room_id));
-      this.affectedClasses = this.bookings.filter(b => b.kind === 'class' && badRoomIds.has(b.room_id));
+      this.impactsKnown=incidentRooms!==null;
+      this.affectedClasses=this.bookings.filter(b=>b.kind==='class' && b.status==='confirmed' && new Date(b.ends_at)>new Date() && (incidentRooms || []).some(r=>r.room_id===b.room_id && new Date(r.starts_at)<new Date(b.ends_at) && (!r.ends_at || new Date(r.ends_at)>new Date(b.starts_at))));
 
       this.renderClasses();
       this.renderBookings();
       this.renderAffectedClasses();
+      await RoomAvailability.mount('bookingRoomAvailability',this.classes);
     } catch (err) {
       console.error('Failed to load bookings & classes:', err);
       if (window.App) window.App.showToast(err.message, 'error');
@@ -76,16 +83,7 @@ const Bookings = {
   },
 
   async fetchActiveIncidentRooms(collegeId) {
-    try {
-      const { data } = await API.client
-        .from('campusops_incident_rooms')
-        .select('*, incident:campusops_incidents(*)')
-        .eq('college_id', collegeId)
-        .is('ends_at', null);
-      return data || [];
-    } catch (e) {
-      return [];
-    }
+    try { return await API.getRoomImpacts(collegeId); } catch(error) { console.warn(error.message);return null; }
   },
 
   renderClasses() {
@@ -142,6 +140,7 @@ const Bookings = {
       }
     }
 
+    if(this.impactsKnown===false) { container.innerHTML='<p class="p-4 text-sm">Room impacts could not be checked. Refresh after the backend update.</p>';return; }
     if (this.affectedClasses.length === 0) {
       container.innerHTML = `
         <div class="py-8 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -199,7 +198,7 @@ const Bookings = {
     }
 
     const member = API._currentMember;
-    const canManage = member && (member.role === 'faculty' || member.role === 'facilities_admin' || member.role === 'department_manager');
+    const canManage = b => member && b.status==='confirmed' && b.kind!=='maintenance' && (b.requested_by===member.user_id || member.role==='facilities_admin' || (member.role==='department_manager' && member.department_id===b.department_id));
 
     container.innerHTML = this.bookings.map(b => {
       const sTime = new Date(b.starts_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
@@ -223,7 +222,7 @@ const Bookings = {
             </p>
           </div>
 
-          ${canManage ? `
+          ${canManage(b) ? `
             <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2">
               <button onclick="Bookings.openMoveModal('${b.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold transition">
                 Move Room
@@ -240,41 +239,56 @@ const Bookings = {
     if (window.App) window.App.refreshIcons();
   },
 
-  openBookRoomModal(classId = null) {
-    const roomSelect = document.getElementById('bookRoomSelect');
-    const classSelect = document.getElementById('bookRoomClass');
-    const titleInput = document.getElementById('bookRoomTitle');
-    const startInput = document.getElementById('bookRoomStart');
-    const endInput = document.getElementById('bookRoomEnd');
-
-    if (roomSelect) {
-      roomSelect.innerHTML = this.rooms.map(r => `
-        <option value="${r.id}">${this.escapeHtml(r.building_name)} · ${this.escapeHtml(r.name)} (${r.capacity} cap)</option>
-      `).join('');
-    }
-
-    if (classSelect) {
-      classSelect.innerHTML = '<option value="">Independent Booking</option>' +
-        this.classes.map(c => `<option value="${c.id}" ${c.id === classId ? 'selected' : ''}>${this.escapeHtml(c.code)} - ${this.escapeHtml(c.title)}</option>`).join('');
-    }
-
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + 15);
-    const later = new Date(now.getTime() + 60 * 60 * 1000);
-
-    if (startInput) startInput.value = now.toISOString().slice(0, 16);
-    if (endInput) endInput.value = later.toISOString().slice(0, 16);
-
-    if (classId) {
-      const cls = this.classes.find(c => c.id === classId);
-      if (cls && titleInput) titleInput.value = cls.title;
-    }
-
-    if (window.App) window.App.openModal('bookRoomModal');
+  async openBookRoomModal(classId = null, options = {}) {
+    App.openModal('bookRoomModal');
+    const select=document.getElementById('bookRoomSelect'),button=document.getElementById('bookRoomSubmitBtn');
+    select.innerHTML='<option value="">Loading rooms…</option>';button.disabled=true;
+    const start=options.start || this.localInput(Date.now()+15*60000),end=options.end || this.localInput(Date.now()+75*60000);
+    document.getElementById('bookRoomStart').value=start;document.getElementById('bookRoomEnd').value=end;
+    document.getElementById('bookRoomAttendees').value=options.attendees || 25;
+    document.getElementById('bookRoomTitle').value='';
+    try {
+      const m=await API.getActiveMembership(); if(!m) throw new Error('Sign in to book a room.');
+      this.classes=await API.getClasses(m.college_id,m.role==='faculty'?m.user_id:null);
+      const courses=document.getElementById('bookRoomClass');
+      courses.innerHTML='<option value="">Independent Booking</option>'+this.classes.map(c=>'<option value="'+c.id+'">'+this.escapeHtml(c.code+' · '+c.title)+'</option>').join('');
+      courses.value=classId || '';this.syncBookingClass();
+      await this.refreshBookingOptions(options.roomId);
+    } catch(error) {document.getElementById('bookRoomAvailabilityHint').textContent=error.message;}
+  },
+  syncBookingClass() {
+    const cls=this.classes.find(c=>c.id===document.getElementById('bookRoomClass').value);
+    const count=document.getElementById('bookRoomAttendees');count.disabled=!!cls;
+    if(cls) {count.value=cls.student_count;document.getElementById('bookRoomTitle').value=cls.title;}
+  },
+  bookingParams() {
+    return {p_start:document.getElementById('bookRoomStart').value,p_end:document.getElementById('bookRoomEnd').value,p_attendees:Number(document.getElementById('bookRoomAttendees').value),p_class:document.getElementById('bookRoomClass').value || null};
+  },
+  updateBookingHint() {
+    const row=this.bookingOptions.find(r=>r.room_id===document.getElementById('bookRoomSelect').value);
+    document.getElementById('bookRoomSubmitBtn').disabled=this.bookingSubmitting || !row?.available;
+    document.getElementById('bookRoomAvailabilityHint').textContent=row ? (row.available?'Available for this class and time. Final availability is checked when booking.':row.reasons.join('. ')) : 'Choose an available room. Reserved or unsuitable rooms are disabled.';
+  },
+  async refreshBookingOptions(preferred) {
+    const request=++this.bookingQuery,select=document.getElementById('bookRoomSelect'),button=document.getElementById('bookRoomSubmitBtn'),hint=document.getElementById('bookRoomAvailabilityHint');
+    const chosen=preferred || select.value,params=this.bookingParams(),stamp=JSON.stringify(params);
+    this.bookingOptions=[];select.disabled=true;button.disabled=true;hint.textContent='Checking availability for this class and time…';
+    try {
+      const m=await API.getActiveMembership();const rows=await API.getRoomAvailability({...params,p_college:m.college_id});
+      if(request!==this.bookingQuery || stamp!==JSON.stringify(this.bookingParams())) return;
+      this.bookingOptions=rows;
+      select.innerHTML='<option value="">Choose an available room</option>'+rows.map(r=>'<option value="'+r.room_id+'" '+(!r.available?'disabled':'')+'>'+this.escapeHtml(r.campus_name+' · '+r.building_name+' · '+r.room_name+' ('+r.capacity+' seats) — '+(r.available?'Available':r.reasons.join('; ')))+'</option>').join('');
+      if(rows.some(r=>r.room_id===chosen && r.available))select.value=chosen;
+      select.disabled=false;this.updateBookingHint();
+      const blocked=rows.find(r=>r.room_id===chosen && !r.available);
+      if(blocked)hint.textContent='Previously selected room: '+blocked.reasons.join('. ')+'. Choose another available room.';
+      if(!rows.some(r=>r.available))hint.textContent='No eligible rooms in this time window. Change the time or class requirements.';
+    } catch(error) {if(request===this.bookingQuery){select.innerHTML='<option value="">Availability could not be loaded</option>';hint.textContent=error.message;}}
   },
 
   async handleBookRoom(e) {
     e.preventDefault();
+    if(this.bookingSubmitting) return;
     const member = await API.getActiveMembership();
     if (!member) return;
 
@@ -298,12 +312,20 @@ const Bookings = {
       return;
     }
 
+    if (!Number.isFinite(new Date(start).getTime()) || !Number.isFinite(new Date(end).getTime()) || new Date(end) <= new Date(start) || new Date(start) < new Date()) {
+      App.showToast('Choose a future start time and an end time after it.', 'error');
+      return;
+    }
+    this.bookingSubmitting=true;
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Reserving...';
     }
 
     try {
+      const available=await API.getRoomAvailability({...this.bookingParams(),p_college:member.college_id});
+      const selected=available.find(r=>r.room_id===roomId);
+      if(!selected?.available) throw new Error(selected?.reasons.join('. ') || 'Selected room is unavailable.');
       await API.bookRoom({
         p_college: member.college_id,
         p_room: roomId,
@@ -324,9 +346,11 @@ const Bookings = {
     } catch (err) {
       console.error('Book room failed:', err);
       if (window.App) window.App.showToast(err.message, 'error');
+      await this.refreshBookingOptions(roomId);
     } finally {
+      this.bookingSubmitting=false;
       if (submitBtn) {
-        submitBtn.disabled = false;
+        submitBtn.disabled = !this.bookingOptions.some(r=>r.room_id===document.getElementById('bookRoomSelect').value && r.available);
         submitBtn.textContent = 'Confirm Booking';
       }
     }
@@ -406,8 +430,8 @@ const Bookings = {
     const endInput = document.getElementById('findRoomsEnd');
     const capInput = document.getElementById('findRoomsCapacity');
 
-    if (startInput && startIso) startInput.value = new Date(startIso).toISOString().slice(0, 16);
-    if (endInput && endIso) endInput.value = new Date(endIso).toISOString().slice(0, 16);
+    if (startInput && startIso) startInput.value = this.localInput(startIso);
+    if (endInput && endIso) endInput.value = this.localInput(endIso);
     if (capInput) capInput.value = '25';
 
     if (window.App) window.App.openModal('findRoomsModal');
@@ -430,20 +454,24 @@ const Bookings = {
 
     if (!start || !end) return;
 
+    if (!Number.isFinite(new Date(start).getTime()) || !Number.isFinite(new Date(end).getTime()) || new Date(end) <= new Date(start) || new Date(start) < new Date()) {
+      App.showToast('Choose a future start time and an end time after it.', 'error');
+      return;
+    }
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Searching...';
     }
 
     try {
-      const results = await API.findRooms({
+      const results = (await Promise.all(this.campuses.map(campus => API.findRooms({
         p_college: member.college_id,
-        p_campus: this.campuses[0]?.id,
+        p_campus: campus.id,
         p_start: start,
         p_end: end,
         p_capacity: capacity,
         p_equipment: []
-      });
+      })))).flat().map(r=>({...r,id:r.room_id,name:r.room_name,building_name:this.rooms.find(x=>x.id===r.room_id)?.building_name}));
 
       if (container) {
         if (!results || results.length === 0) {
@@ -479,17 +507,7 @@ const Bookings = {
     }
   },
 
-  selectAlternativeRoom(roomId, start, end) {
-    if (window.App) window.App.closeModals();
-    this.openBookRoomModal();
-    const roomSelect = document.getElementById('bookRoomSelect');
-    const startInput = document.getElementById('bookRoomStart');
-    const endInput = document.getElementById('bookRoomEnd');
-
-    if (roomSelect) roomSelect.value = roomId;
-    if (startInput) startInput.value = new Date(start).toISOString().slice(0, 16);
-    if (endInput) endInput.value = new Date(end).toISOString().slice(0, 16);
-  },
+  selectAlternativeRoom(roomId,start,end) { App.closeModals();return this.openBookRoomModal(null,{roomId,start:this.localInput(start),end:this.localInput(end),attendees:Number(document.getElementById('findRoomsCapacity').value)||1}); },
 
   openOverrideFromFind(start, end, capacity) {
     if (window.App) window.App.closeModals();
@@ -501,8 +519,8 @@ const Bookings = {
     if (rSelect) {
       rSelect.innerHTML = this.rooms.map(r => `<option value="${r.id}">${this.escapeHtml(r.building_name)} · ${this.escapeHtml(r.name)}</option>`).join('');
     }
-    if (sInput) sInput.value = new Date(start).toISOString().slice(0, 16);
-    if (eInput) eInput.value = new Date(end).toISOString().slice(0, 16);
+    if (sInput) sInput.value = this.localInput(start);
+    if (eInput) eInput.value = this.localInput(end);
     if (attInput) attInput.value = capacity;
 
     if (window.App) window.App.openModal('bookingOverrideModal');
@@ -533,6 +551,10 @@ const Bookings = {
       return;
     }
 
+    if (!Number.isFinite(new Date(start).getTime()) || !Number.isFinite(new Date(end).getTime()) || new Date(end) <= new Date(start) || new Date(start) < new Date()) {
+      App.showToast('Choose a future start time and an end time after it.', 'error');
+      return;
+    }
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span> Submitting...';

@@ -135,6 +135,7 @@ const MyReports = {
                 <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
                 ${messagesCount} ${messagesCount === 1 ? 'Message' : 'Messages'}
               </span>
+              <button onclick="MyReports.deleteReport('${r.id}', this)" class="px-3 py-1.5 text-rose-600 text-xs font-semibold">Delete report</button>
               <button onclick="MyReports.openDetailModal('${r.id}')" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-indigo-600 dark:text-indigo-300 text-xs font-semibold transition flex items-center gap-1">
                 <span>View Report, Photo & Chat</span>
                 <i data-lucide="chevron-right" class="w-3 h-3"></i>
@@ -153,6 +154,17 @@ const MyReports = {
         </div>
       `;
     }
+  },
+
+  async deleteReport(reportId, button) {
+    if (!confirm('Delete this report and its chat/photo records? This cannot be undone. Any maintenance work already created will remain with staff.')) return;
+    button.disabled=true;
+    try {
+      const {error}=await API.client.rpc('campusops_delete_own_report',{p_report:reportId});
+      if(error) throw error;
+      App.showToast('Report deleted.', 'success');
+      await this.fetchAndRender();
+    } catch(error) { App.showToast(error.code==='PGRST202'?'Run the student report deletion SQL update in Supabase first.':error.message,'error');button.disabled=false; }
   },
 
   async openDetailModal(reportId) {
@@ -185,6 +197,9 @@ const MyReports = {
 
     ReportPhotos.render(document.getElementById('reportDetailPhotos'), report.id, true);
 
+    if (report.equipment_description && metaEl) {
+      const equipment=document.createElement('p'); equipment.className='text-xs mt-2'; equipment.textContent='Equipment / item: '+report.equipment_description; metaEl.append(equipment);
+    }
     // Render Messages
     if (messagesEl) {
       const msgs = Array.isArray(report.messages) ? report.messages : [];

@@ -1,8 +1,8 @@
 /**
  * CampusOps Report Form Controller
- * Connected to campusops_submit_report RPC.
- * Dynamic hierarchy: Campus -> Department -> Building -> Room (Building · Room) -> Asset
- * Keyword-based category and priority suggestions (non-generative).
+ * Connected to campusops_submit_report_v2; server validates priority.
+ * Dynamic hierarchy: Campus -> Department -> Building -> Room; equipment is free text.
+ * Priority preview uses the same rule dataset as the database.
  * Preserves user inputs on submission errors.
  */
 
@@ -11,12 +11,12 @@ const ReportForm = {
   departments: [],
   buildings: [],
   rooms: [],
-  assets: [],
-  suggestedCategory: null,
-  suggestedPriority: null,
 
   async init() {
     this.setupEventListeners();
+    document.getElementById('reportCategory').innerHTML = ReportRules.categories.map(c=>'<option value="'+c.code+'">'+this.escapeHtml(c.name)+'</option>').join('');
+    document.getElementById('reportCategory').value = 'general';
+    this.analyzeKeywords('');
   },
 
   async loadReferenceData() {
@@ -24,19 +24,18 @@ const ReportForm = {
     if (!member) return;
 
     try {
-      const [campuses, departments, buildings, rooms, assets] = await Promise.all([
+      const [campuses, departments, buildings, rooms] = await Promise.all([
         API.getCampuses(member.college_id),
         API.getDepartments(member.college_id),
         API.getBuildings(member.college_id),
-        API.getRooms(member.college_id),
-        API.getAssets(member.college_id)
+        API.getRooms(member.college_id)
       ]);
 
       this.campuses = campuses || [];
       this.departments = departments || [];
       this.buildings = buildings || [];
       this.rooms = rooms || [];
-      this.assets = assets || [];
+
 
       this.populateDropdowns();
     } catch (err) {
@@ -55,9 +54,14 @@ const ReportForm = {
       if(this.campuses.some(c=>c.id===previousCampus)) campusSelect.value=previousCampus;
     }
     if(deptSelect) {
-      const previous=deptSelect.value || member?.department_id;
-      deptSelect.innerHTML=this.departments.map(d=>'<option value="'+d.id+'">'+this.escapeHtml(d.name)+'</option>').join('');
+      const previous=deptSelect.value || '';
+      deptSelect.innerHTML='<option value="">All departments</option>'+this.departments.map(d=>'<option value="'+d.id+'">'+this.escapeHtml(d.name)+'</option>').join('');
       if(this.departments.some(d=>d.id===previous)) deptSelect.value=previous;
+    }
+    if (!previousCampus && campusSelect && deptSelect) {
+      const room=this.rooms.find(r=>r.department_id===deptSelect.value);
+      const building=this.buildings.find(b=>b.id===room?.building_id);
+      if(building) campusSelect.value=building.campus_id;
     }
     this.updateBuildingDropdown();
   },
@@ -76,24 +80,14 @@ const ReportForm = {
     const campusId=document.getElementById('reportCampus')?.value;
     const departmentId=document.getElementById('reportDepartment')?.value;
     const buildings=new Set(this.buildings.filter(b=>b.campus_id===campusId).map(b=>b.id));
-    const rooms=this.rooms.filter(r=>buildings.has(r.building_id) && r.department_id===departmentId && (!selectedBuildingId || r.building_id===selectedBuildingId));
-    select.innerHTML='<option value="">Select a room, or provide it later</option>'+rooms.map(r=>'<option value="'+r.id+'">'+this.escapeHtml(r.building_name)+' · '+this.escapeHtml(r.name)+'</option>').join('');
-    this.updateAssetDropdown();
-  },
-
-  updateAssetDropdown(selectedRoomId = '') {
-    const select=document.getElementById('reportAsset');
-    if(!select) return;
-    select.disabled=!selectedRoomId;
-    const assets=selectedRoomId ? this.assets.filter(a=>a.room_id===selectedRoomId) : [];
-    select.innerHTML='<option value="">'+(selectedRoomId?'Equipment / asset (optional)':'Choose a room first')+'</option>'+assets.map(a=>'<option value="'+a.id+'">'+this.escapeHtml(a.name)+' — '+this.escapeHtml(a.asset_tag)+'</option>').join('');
+    const rooms=this.rooms.filter(r=>buildings.has(r.building_id) && (!departmentId || r.department_id===departmentId) && (!selectedBuildingId || r.building_id===selectedBuildingId));
+    select.innerHTML='<option value="">Select the room</option>'+rooms.map(r=>'<option value="'+r.id+'">'+this.escapeHtml(r.building_name)+' · '+this.escapeHtml(r.name)+' · '+this.escapeHtml(r.department_name)+'</option>').join('');
   },
 
   setupEventListeners() {
     const form = document.getElementById('issueReportForm');
     const descInput = document.getElementById('reportDescription');
     const buildingSelect = document.getElementById('reportBuilding');
-    const roomSelect = document.getElementById('reportRoom');
 
     document.getElementById('reportCampus')?.addEventListener('change', () => this.updateBuildingDropdown());
     document.getElementById('reportDepartment')?.addEventListener('change', () => this.updateRoomDropdown());
@@ -104,11 +98,6 @@ const ReportForm = {
       });
     }
 
-    if (roomSelect) {
-      roomSelect.addEventListener('change', (e) => {
-        this.updateAssetDropdown(e.target.value);
-      });
-    }
 
     // Keyword-based suggestion analysis
     if (descInput) {
@@ -134,90 +123,10 @@ const ReportForm = {
     }
   },
 
-  analyzeKeywords(text) {
-    const box = document.getElementById('keywordSuggestionBox');
-    const textLower = (text || '').toLowerCase();
-
-    if (textLower.length < 5) {
-      if (box) box.classList.add('hidden');
-      return;
-    }
-
-    let cat = null;
-    let pri = null;
-    let rationale = '';
-
-    // Electrical keywords
-    if (/spark|short circuit|wire|breaker|switch|socket|power outage|blackout|electroc|shock|voltage/.test(textLower)) {
-      cat = 'electrical';
-      pri = /spark|shock|smoke|fire/.test(textLower) ? 1 : 2;
-      rationale = 'Electrical safety hazard detected from keywords';
-    }
-    // Plumbing keywords
-    else if (/leak|pipe|flood|water|drain|clog|sink|flush|toilet|overflow|sewage/.test(textLower)) {
-      cat = 'plumbing';
-      pri = /flood|burst|overflow|sewage/.test(textLower) ? 1 : 3;
-      rationale = 'Plumbing fixture or water issue detected from keywords';
-    }
-    // IT / Network keywords
-    else if (/wifi|router|lan|ethernet|switch|network|internet|cable|server|pc|computer|projector/.test(textLower)) {
-      cat = 'it';
-      pri = /server|offline|no internet/.test(textLower) ? 2 : 3;
-      rationale = 'Network/IT equipment keywords detected';
-    }
-    // HVAC keywords
-    else if (/ac|air condition|cooler|hvac|vent|heating|cooling|thermostat|airflow|duct/.test(textLower)) {
-      cat = 'hvac';
-      pri = 3;
-      rationale = 'Climate control and ventilation keywords detected';
-    }
-    // General keywords
-    else if (/chair|bench|desk|table|door|window|lock|handle|glass|paint|tile|stair|rail/.test(textLower)) {
-      cat = 'general';
-      pri = /glass|broken door|lock|stair/.test(textLower) ? 2 : 4;
-      rationale = 'Physical campus fixtures keywords detected';
-    }
-
-    if (cat && box) {
-      this.suggestedCategory = cat;
-      this.suggestedPriority = pri;
-      const priLabels = { 1: 'Critical', 2: 'High', 3: 'Medium', 4: 'Low' };
-
-      box.classList.remove('hidden');
-      box.innerHTML = `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-xs">
-          <div class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">💡</span>
-            <div>
-              <span class="font-semibold text-slate-900 dark:text-white">Keyword Suggestion:</span>
-              <span class="text-indigo-700 dark:text-indigo-300 font-medium capitalize">Category: ${cat}</span> ·
-              <span class="text-indigo-700 dark:text-indigo-300 font-medium">Priority: ${priLabels[pri] || 'Medium'}</span>
-              <span class="text-slate-500 text-[11px] block mt-0.5">${rationale}</span>
-            </div>
-          </div>
-          <button type="button" onclick="ReportForm.applySuggestion()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition">
-            Apply
-          </button>
-        </div>
-      `;
-    } else if (box) {
-      box.classList.add('hidden');
-    }
-  },
-
-  applySuggestion() {
-    const catSelect = document.getElementById('reportCategory');
-    const priSelect = document.getElementById('reportPriority');
-    const box = document.getElementById('keywordSuggestionBox');
-
-    if (catSelect && this.suggestedCategory) {
-      catSelect.value = this.suggestedCategory;
-    }
-    if (priSelect && this.suggestedPriority) {
-      priSelect.value = String(this.suggestedPriority);
-    }
-    if (box) box.classList.add('hidden');
-    if (window.App) window.App.showToast('Suggestion applied to form!', 'info');
+  analyzeKeywords() {
+    if(window.ReportAI){ReportAI.signature='';ReportAI.result=null;}
+    document.getElementById('reportPrioritySummary').textContent='Awaiting AI review';
+    document.getElementById('reportPriorityReason').textContent='Press Submit to let AI assess Critical, High, Medium or Low.';
   },
 
   async submitForm() {
@@ -234,10 +143,8 @@ const ReportForm = {
     const campusSelect = document.getElementById('reportCampus');
     const deptSelect = document.getElementById('reportDepartment');
     const roomSelect = document.getElementById('reportRoom');
-    const assetSelect = document.getElementById('reportAsset');
     const descInput = document.getElementById('reportDescription');
     const catSelect = document.getElementById('reportCategory');
-    const priSelect = document.getElementById('reportPriority');
     const submitBtn = document.getElementById('submitReportBtn');
 
     const description = descInput ? descInput.value.trim() : '';
@@ -248,14 +155,15 @@ const ReportForm = {
     }
 
     const campusId = campusSelect?.value || (this.campuses[0] ? this.campuses[0].id : null);
-    const departmentId = deptSelect?.value || member.department_id || (this.departments[0] ? this.departments[0].id : null);
+    const selectedRoom=this.rooms.find(r=>r.id===roomSelect?.value);
+    const departmentId = selectedRoom?.department_id || null;
     const roomId = roomSelect?.value || null;
-    const assetId = assetSelect?.value || null;
+    const equipment = null;
     const category = catSelect?.value || 'general';
-    const priority = priSelect?.value ? parseInt(priSelect.value, 10) : 3;
 
-    if (!campusId || !departmentId) {
-      if (window.App) window.App.showToast('Campus and department are required.', 'error');
+
+    if (!campusId || !departmentId || !roomId) {
+      if (window.App) window.App.showToast('Choose a campus, department and room.', 'error');
       return;
     }
 
@@ -271,15 +179,16 @@ const ReportForm = {
     }
 
     try {
+      if (!await ReportAI.review()) return;
       const result = await API.submitReport({
+        p_assessment: ReportAI.result.assessment_id,
         p_college: member.college_id,
         p_campus: campusId,
         p_department: departmentId,
         p_description: description,
         p_room: roomId,
-        p_asset: assetId,
         p_category: category,
-        p_priority: priority
+        p_equipment: equipment
       });
 
       let photoError = null;
@@ -318,14 +227,17 @@ const ReportForm = {
   },
 
   resetForm() {
+    ReportAI.signature="";ReportAI.result=null;document.getElementById("reportAIReview")?.remove();
     const form = document.getElementById('issueReportForm');
     if (form) form.reset();
     ReportPhotos.clearPreview();
     const box = document.getElementById('keywordSuggestionBox');
     if (box) box.classList.add('hidden');
-    this.suggestedCategory = null;
-    this.suggestedPriority = null;
+    document.getElementById('reportCampus').value='';
+    document.getElementById('reportDepartment').value='';
     this.populateDropdowns();
+    document.getElementById('reportCategory').value='general';
+    this.analyzeKeywords('');
   },
 
   escapeHtml(str) {

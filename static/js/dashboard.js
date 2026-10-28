@@ -61,6 +61,9 @@ const Dashboard = {
 
     // Role-specific rendering
     switch (member.role) {
+      case 'report_admin':
+        await ReportAdmin.load(container);
+        break;
       case 'student':
         await this.renderStudentDashboard(container, member);
         break;
@@ -114,8 +117,8 @@ const Dashboard = {
         <section class="college-overview" id="campusOverview" aria-labelledby="campusOverviewTitle">
           <div class="college-section-heading"><p class="college-eyebrow">OUR COLLEGE</p><h2 id="campusOverviewTitle">Spaces that support your day.</h2><p>From classrooms to laboratories, CampusOps brings everyday campus needs into one place.</p></div>
           <div class="college-space-grid">
-            <article class="college-space-card"><span class="college-card-number">01 / LEARNING</span><i data-lucide="book-open" aria-hidden="true"></i><h3>Academic Block</h3><p>Classrooms and shared learning spaces, with room booking and facilities support for faculty and students.</p></article>
-            <article class="college-space-card"><span class="college-card-number">02 / DISCOVERY</span><i data-lucide="flask-conical" aria-hidden="true"></i><h3>Laboratory Block</h3><p>Practical learning spaces supported by equipment records, issue reporting and maintenance coordination.</p></article>
+            <article class="college-space-card"><span class="college-card-number">01 / LEARNING</span><i data-lucide="book-open" aria-hidden="true"></i><h3>Academic Block</h3><p>Main Campus classrooms with facilities support for CSE, IT and ECE. Faculty manage class bookings.</p></article>
+            <article class="college-space-card"><span class="college-card-number">02 / DISCOVERY</span><i data-lucide="flask-conical" aria-hidden="true"></i><h3>Main & Sub Campus</h3><p>Technology Block and Electronics Block add teaching rooms and labs alongside the Main Campus Laboratory Block.</p></article>
             <article class="college-space-card"><span class="college-card-number">03 / CAMPUS CARE</span><i data-lucide="heart-handshake" aria-hidden="true"></i><h3>Here to help</h3><p>Report a facilities issue, follow progress and stay informed when maintenance affects your campus activities.</p></article>
           </div>
         </section>
@@ -206,11 +209,11 @@ const Dashboard = {
     const [classes, bookings, incidentRooms] = await Promise.all([
       API.getClasses(member.college_id, member.user_id),
       API.getBookings(member.college_id),
-      Promise.resolve(API.client.from('campusops_incident_rooms').select('room_id').eq('college_id', member.college_id).is('ends_at', null)).then(result => { if (result.error) throw new Error(API.formatError(result.error)); return result; })
+      API.getRoomImpacts(member.college_id).catch(()=>null)
     ]);
 
-    const badRoomIds = new Set((incidentRooms.data || []).map(r => r.room_id));
-    const affected = bookings.filter(b => b.kind === 'class' && b.status === 'confirmed' && new Date(b.ends_at) > new Date() && badRoomIds.has(b.room_id));
+    const overlaps=(b,r)=>r.room_id===b.room_id && new Date(r.starts_at)<new Date(b.ends_at) && (!r.ends_at || new Date(r.ends_at)>new Date(b.starts_at));
+    const affected = bookings.filter(b => b.kind === 'class' && b.status === 'confirmed' && new Date(b.ends_at) > new Date() && (incidentRooms || []).some(r=>overlaps(b,r)));
 
     container.innerHTML = `
       <div class="space-y-8">
@@ -255,6 +258,7 @@ const Dashboard = {
           </div>
         ` : ''}
 
+        <div id="facultyRoomAvailability"></div>
         <!-- Metrics Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -272,12 +276,13 @@ const Dashboard = {
         </div>
       </div>
     `;
+    await RoomAvailability.mount('facultyRoomAvailability',classes);
   },
 
   // 3. TECHNICIAN DASHBOARD
   async renderTechnicianDashboard(container, member) {
     const workOrders = await API.getWorkOrders(member.college_id, member.user_id);
-    const blocked = workOrders.filter(w => w.status === 'blocked_parts' || w.status === 'waiting_approval').length;
+    const blocked = workOrders.filter(w => w.status === 'blocked_parts' || ['waiting_approval','pending_approval'].includes(w.status)).length;
     const inProgress = workOrders.filter(w => w.status === 'in_progress').length;
 
     container.innerHTML = `
@@ -322,7 +327,7 @@ const Dashboard = {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
             <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned Orders</span>
-            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${workOrders.length}</div>
+            <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${workOrders.filter(w=>!['completed','cancelled'].includes(w.status)).length}</div>
           </div>
           <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
             <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">In Progress</span>
@@ -333,6 +338,9 @@ const Dashboard = {
             <div class="text-3xl font-black text-rose-600 mt-1">${blocked}</div>
           </div>
         </div>
+        <section class="space-y-3"><h2 class="text-xl font-bold">Your assigned jobs</h2>
+          ${workOrders.filter(w=>!['completed','cancelled'].includes(w.status)).map(w=>`<article class="p-5 border rounded-2xl bg-white dark:bg-slate-800"><h3 class="font-bold">${this.escapeHtml(w.title)}</h3><p class="mt-2 text-sm capitalize">${this.escapeHtml(w.status.replaceAll('_',' '))}</p><button type="button" onclick="App.switchTab('workorders')" class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-xl">Open job & photos</button></article>`).join('') || '<p class="text-sm text-slate-500">No active jobs assigned to you yet.</p>'}
+        </section>
       </div>
     `;
   },

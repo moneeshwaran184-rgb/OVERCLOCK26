@@ -162,12 +162,14 @@ const WorkOrders = {
     const isTech = member && member.role === 'technician';
 
     container.innerHTML = this.workOrders.map(w => {
-      const isBlocked = w.status === 'blocked_parts' || w.status === 'pending_approval';
+      const isBlocked = w.status === 'blocked_parts' || ['waiting_approval','pending_approval'].includes(w.status);
       const partsList = Array.isArray(w.parts) ? w.parts : [];
       const partsBlocked = partsList.some(p => p.reserved_quantity < p.quantity || (p.stock && p.stock.on_hand <= 0));
 
       const statusBadges = {
         open: 'bg-amber-50 text-amber-700 border-amber-200',
+        assigned: 'bg-blue-50 text-blue-700 border-blue-200',
+        waiting_approval: 'bg-orange-50 text-orange-700 border-orange-200',
         acknowledged: 'bg-blue-50 text-blue-700 border-blue-200',
         in_progress: 'bg-indigo-50 text-indigo-700 border-indigo-200',
         blocked_parts: 'bg-rose-50 text-rose-700 border-rose-300 font-bold animate-pulse',
@@ -249,7 +251,7 @@ const WorkOrders = {
                   <i data-lucide="check" class="w-3.5 h-3.5"></i> Acknowledged
                 </span>
               ` : '<span class="text-amber-600 flex items-center gap-1">Unacknowledged</span>'}
-              ${w.started_at ? `
+              ${w.started_at && w.status === 'in_progress' ? `
                 <span class="text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-medium">
                   <i data-lucide="play" class="w-3.5 h-3.5"></i> In Progress
                 </span>
@@ -277,7 +279,7 @@ const WorkOrders = {
 
               ${isTech && w.status !== 'completed' && w.status !== 'cancelled' ? `
                 <button onclick="WorkOrders.openRepairApprovalModal('${w.id}')" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition">
-                  Request Approval
+                  Request Material / Approval
                 </button>
               ` : ''}
             </div>
@@ -303,7 +305,7 @@ const WorkOrders = {
   async startWork(workId) {
     try {
       const res = await API.startWork(workId);
-      if (window.App) window.App.showToast(`Work started: ${res || 'Task in progress'}`, 'success');
+      if (window.App) window.App.showToast(res === 'waiting_approval' ? 'Request sent to your department manager. Wait for the approval notification.' : res === 'blocked_parts' ? 'Approved, but stock is unavailable. Facilities must restock before work can start.' : 'Work started.', res === 'in_progress' ? 'success' : 'info');
       await this.loadData();
     } catch (err) {
       console.error('Start work failed:', err);
@@ -380,13 +382,21 @@ const WorkOrders = {
     }
   },
 
-  openRepairApprovalModal(workId) {
+  async openRepairApprovalModal(workId) {
     this.selectedWorkId = workId;
     const reasonInput = document.getElementById('repairApprovalReason');
     const emergencyCheck = document.getElementById('repairApprovalEmergency');
     if (reasonInput) reasonInput.value = '';
     if (emergencyCheck) emergencyCheck.checked = false;
-    if (window.App) window.App.openModal('repairApprovalModal');
+    const select = document.getElementById('repairMaterialStock');
+    select.innerHTML = '<option value="">Repair authorization only</option>';
+    document.getElementById('repairMaterialQuantity').value = '1';
+    try {
+      const member = await API.getActiveMembership();
+      const stock = await API.getStock(member.college_id);
+      select.innerHTML += stock.map(s => `<option value="${s.id}">${this.escapeHtml(s.item?.name || 'Material')} — available ${Number(s.on_hand)-Number(s.reserved)}</option>`).join('');
+      if (window.App) window.App.openModal('repairApprovalModal');
+    } catch (err) { App.showToast(err.message, 'error'); }
   },
 
   async handleRepairApproval(e) {
@@ -411,14 +421,20 @@ const WorkOrders = {
     }
 
     try {
-      await API.requestRepairApproval({
+      const stockId = document.getElementById('repairMaterialStock').value;
+      if (stockId) {
+        const quantity = Number(document.getElementById('repairMaterialQuantity').value);
+        if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Enter a positive material quantity.');
+        const { error } = await API.client.rpc('campusops_request_material', { p_work: this.selectedWorkId, p_stock: stockId, p_quantity: quantity, p_reason: reason });
+        if (error) throw new Error(API.formatError(error));
+      } else await API.requestRepairApproval({
         p_work: this.selectedWorkId,
         p_reason: reason,
         p_emergency: emergency
       });
 
       if (window.App) {
-        window.App.showToast('Repair approval request submitted to Department Manager.', 'success');
+        window.App.showToast('Request sent to your department manager. You will be notified of the decision.', 'success');
         window.App.closeModals();
       }
 

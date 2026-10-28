@@ -1,6 +1,6 @@
 /**
  * CampusOps Approvals Controller
- * Manages 2-stage approval workflows (Department Manager: stage 1, Procurement Approver: stage 2).
+ * Managers approve material, repair and purchase requests; booking overrides also require Facilities.
  * Enforces self-approval prevention and confirmation prompts.
  */
 
@@ -30,7 +30,7 @@ const Approvals = {
 
     try {
       const isManager = member.role === 'department_manager';
-      const approvals = await API.getApprovals(member.college_id, isManager ? member.department_id : null);
+      const approvals = await API.getApprovals(member.college_id, null);
       this.approvals = approvals || [];
       this.renderApprovals();
     } catch (err) {
@@ -52,7 +52,7 @@ const Approvals = {
     let list = this.approvals;
     if (isProcurement) {
       // Stage 2 approvals
-      list = list.filter(a => a.stage === 2 || a.status === 'pending');
+      list = list.filter(a => a.current_stage === 2 || a.status === 'pending');
     }
 
     if (list.length === 0) {
@@ -70,12 +70,13 @@ const Approvals = {
       const isRequester = member && a.requested_by === member.user_id;
       const isPending = a.status === 'pending';
       const canApprove = isPending && !isRequester && (
-        (isManager && a.stage === 1) ||
-        (isProcurement && a.stage === 2) ||
-        (isFacilities && a.kind === 'booking_override')
+        (isManager && a.current_stage === 1) ||
+        (isProcurement && a.current_stage === 2) ||
+        (isFacilities && a.current_stage === 2 && a.kind === 'booking_override')
       );
 
       const kindLabels = {
+        material: 'Technician Material Request',
         repair: 'Repair Authorization',
         purchase: 'Material Purchase Order',
         booking_override: 'Room Booking Override',
@@ -98,7 +99,7 @@ const Approvals = {
                   ${kindLabels[a.kind] || a.kind}
                 </span>
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${isPending ? 'bg-amber-100 text-amber-800' : (a.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600')}">
-                  Stage ${a.stage || 1}: ${a.status}
+                  Stage ${a.current_stage || 1}: ${a.status}
                 </span>
                 <span class="text-xs text-slate-400 font-mono">${new Date(a.created_at).toLocaleDateString()}</span>
               </div>
@@ -119,7 +120,8 @@ const Approvals = {
           <!-- Payload info if purchase -->
           ${a.payload ? `
             <div class="mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-700/60 text-xs">
-              ${a.payload.total_cost ? `<span class="font-semibold text-slate-800 dark:text-slate-200">Total Cost: ₹${a.payload.total_cost}</span> · Quantity: ${a.payload.quantity || 1}` : ''}
+              ${a.payload.item_name ? `<span>Item: ${this.escapeHtml(a.payload.item_name)} · Quantity: ${a.payload.quantity}</span>` : ''}
+              ${a.kind === 'purchase' ? `<span class="font-semibold text-slate-800 dark:text-slate-200">Total Cost: ₹${Number(a.amount).toFixed(2)}</span> · Quantity: ${a.payload.quantity || 1}` : ''}
               ${a.payload.title ? `<span class="font-semibold text-slate-800 dark:text-slate-200">Room Requested:</span> ${a.payload.title}` : ''}
             </div>
           ` : ''}
@@ -130,7 +132,7 @@ const Approvals = {
               ${a.decisions.map(d => `
                 <div class="flex items-center gap-1.5">
                   <span class="font-semibold text-slate-700 dark:text-slate-300">Stage ${d.stage} decided by ${this.escapeHtml(d.decider?.full_name || 'Approver')}:</span>
-                  <span class="capitalize font-bold ${d.approved ? 'text-emerald-600' : 'text-rose-600'}">${d.approved ? 'Approved' : 'Rejected'}</span>
+                  <span class="capitalize font-bold ${(d.decision === 'approved') ? 'text-emerald-600' : 'text-rose-600'}">${(d.decision === 'approved') ? 'Approved' : 'Rejected'}</span>
                   ${d.comment ? `— "${this.escapeHtml(d.comment)}"` : ''}
                 </div>
               `).join('')}

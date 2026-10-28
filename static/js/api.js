@@ -244,6 +244,19 @@ const API = {
     return data || [];
   },
 
+  async getRoomImpacts(collegeId) {
+    const {data,error}=await this.client.rpc('campusops_room_impacts',{p_college:collegeId});
+    if(error) throw new Error(this.formatError(error));
+    return data || [];
+  },
+  async getRoomAvailability({p_college,p_start,p_end,p_attendees=1,p_equipment=[],p_class=null}) {
+    const start=new Date(p_start),end=new Date(p_end);
+    if(!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end<=start || end-start>7*86400000) throw new Error('Choose a start and end time within seven days.');
+    if(!Number.isInteger(p_attendees) || p_attendees<1) throw new Error('Enter a positive attendee count.');
+    const {data,error}=await this.client.rpc('campusops_room_availability',{p_college,p_start:start.toISOString(),p_end:end.toISOString(),p_attendees,p_equipment,p_class});
+    if(error) throw new Error(error.code==='PGRST202' ? 'Room availability needs the latest backend update. Contact your administrator.' : this.formatError(error));
+    return data || [];
+  },
   async getClasses(collegeId, facultyId = null) {
     let q = this.client
       .from('campusops_classes')
@@ -371,19 +384,10 @@ const API = {
   },
 
   // ================= WORKFLOW RPC FUNCTIONS =================
-  async submitReport({ p_college, p_campus, p_department, p_description, p_room = null, p_asset = null, p_category = null, p_priority = null }) {
-    const { data, error } = await this.client.rpc('campusops_submit_report', {
-      p_college,
-      p_campus,
-      p_department,
-      p_description: p_description.trim(),
-      p_room,
-      p_asset,
-      p_category,
-      p_priority: p_priority ? parseInt(p_priority, 10) : null
-    });
-    if (error) throw new Error(this.formatError(error));
-    return data;
+  async submitReport({p_assessment}) {
+    if(!p_assessment)throw new Error('Complete the AI review first.');
+    const {data,error}=await this.client.rpc('campusops_submit_ai_report',{p_assessment});
+    if(error)throw new Error(this.formatError(error));return data;
   },
 
   async replyReport({ p_report, p_message, p_room = null }) {
@@ -789,7 +793,10 @@ const API = {
     if (userId) q = q.eq('user_id', userId);
     const { data, error } = await q;
     if (error) throw new Error(this.formatError(error));
-    return data || [];
+    const role=(await this.getActiveMembership())?.role;
+    return (data || []).filter(n => role === 'student'
+      ? ['report_submitted','report_resolved'].includes(n.kind) || (n.kind==='report' && n.dedupe_key?.startsWith('report:')) || (n.kind==='incident' && n.dedupe_key?.startsWith('resolved:'))
+      : n.kind!=='booking' || role==='faculty');
   },
 
   // ================= ANALYTICS VIEWS =================
