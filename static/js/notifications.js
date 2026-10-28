@@ -14,6 +14,13 @@ const Notifications = {
     try {
       const data = await API.getNotifications(user.id);
       this.notifications = data || [];
+      this.updateBadge();
+      const unread=this.notifications.filter(n=>!n.read_at);
+      if(document.getElementById('section-notifications')?.classList.contains('hidden')===false && unread.length){
+        const results=await Promise.allSettled(unread.map(n=>API.readNotification(n.id)));
+        const seen=new Set(unread.filter((_,i)=>results[i].status==='fulfilled').map(n=>n.id));
+        this.notifications=this.notifications.map(n=>seen.has(n.id)?{...n,read_at:new Date().toISOString()}:n);
+      }
       this.render();
       this.updateBadge();
     } catch (err) {
@@ -27,7 +34,10 @@ const Notifications = {
 
     const unreadCount = this.notifications.filter(n => !n.read_at).length;
     if (unreadCount > 0) {
-      badge.textContent = unreadCount;
+      badge.textContent = '';
+      badge.setAttribute('aria-label', unreadCount + ' unread notifications');
+      badge.classList.remove('w-4','h-4','text-[10px]','flex','items-center','justify-center');
+      badge.classList.add('w-2.5','h-2.5');
       badge.classList.remove('hidden');
     } else {
       badge.classList.add('hidden');
@@ -68,11 +78,7 @@ const Notifications = {
             </div>
           </div>
 
-          ${isUnread ? `
-            <button onclick="Notifications.markRead('${n.id}')" class="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold shrink-0 transition" title="Mark as Read">
-              Mark Read
-            </button>
-          ` : ''}
+
         </div>
       `;
     }).join('');
@@ -94,6 +100,8 @@ const Notifications = {
       case 'work': return 'wrench';
       case 'approval': return 'file-check';
       case 'booking': return 'calendar';
+      case 'report_submitted': return 'clipboard-check';
+      case 'report_resolved': return 'check-circle';
       case 'report': return 'alert-circle';
       case 'stock': return 'package-alert';
       default: return 'bell';

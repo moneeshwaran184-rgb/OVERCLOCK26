@@ -28,8 +28,29 @@ const App = {
     // Handle initial navigation tab from URL hash
     const hash = window.location.hash.replace('#', '') || 'dashboard';
     await this.switchTab(hash);
+    this.startLiveRefresh();
 
 
+  },
+
+  startLiveRefresh() {
+    clearInterval(this.liveRefreshTimer);
+    this.liveRefreshTimer = setInterval(async () => {
+      if (this.liveRefreshBusy || document.hidden || !API._currentMember) return;
+      if (document.querySelector('.modal-backdrop:not(.hidden)')) return;
+      this.liveRefreshBusy = true;
+      const role = API._currentMember.role;
+      try {
+        if (this.currentTab === 'dashboard' && role === 'report_admin') await ReportAdmin.refresh();
+        if (this.currentTab === 'workorders' && role === 'technician') await WorkOrders.loadData();
+        if (this.currentTab === 'dashboard' && role === 'technician') await Dashboard.renderRoleDashboard();
+        if (this.currentTab === 'approvals' && ['department_manager','facilities_admin'].includes(role)) await Approvals.loadData();
+        if (['faculty','facilities_admin','department_manager'].includes(role) && ['dashboard','bookings'].includes(this.currentTab) && window.RoomAvailability) await RoomAvailability.refreshVisible();
+        if (window.Notifications) await Notifications.loadData();
+        if (this.currentTab === 'myreports' && role === 'student') await MyReports.load();
+      } catch (error) { console.warn('Live refresh failed:', error.message); }
+      finally { this.liveRefreshBusy = false; }
+    }, 10000);
   },
 
   refreshIcons() {
@@ -120,6 +141,8 @@ const App = {
       await window.Dashboard.renderRoleDashboard();
     } else if (tabName === 'report' && window.ReportForm) {
       await window.ReportForm.loadReferenceData();
+    } else if (tabName === 'campusreports') {
+      await CampusReports.load();
     } else if (tabName === 'myreports' && window.MyReports) {
       await window.MyReports.load();
     } else if (tabName === 'rooms' && window.BuildingsRooms) {
@@ -161,10 +184,12 @@ const App = {
     if (role === 'public') return false;
 
     switch (role) {
+      case 'report_admin':
+        return ['dashboard','notifications'].includes(tab);
       case 'student':
-        return ['dashboard', 'report', 'myreports', 'notifications'].includes(tab);
+        return ['dashboard', 'report', 'myreports', 'campusreports', 'notifications'].includes(tab);
       case 'faculty':
-        return ['dashboard', 'bookings', 'report', 'myreports', 'notifications'].includes(tab);
+        return ['dashboard', 'bookings', 'notifications'].includes(tab);
       case 'technician':
         return ['dashboard', 'workorders', 'notifications'].includes(tab);
       case 'department_manager':
@@ -321,6 +346,7 @@ const App = {
           technician: 'Technician',
           department_manager: 'Dept Manager',
           facilities_admin: 'Facilities Admin',
+          report_admin: 'Report Admin',
           procurement_approver: 'Procurement',
           system_admin: 'System Admin'
         };
@@ -378,17 +404,20 @@ const App = {
       public: [
         { id: 'dashboard', label: 'Home', icon: 'layout-grid' }
       ],
+      report_admin: [
+        { id: 'dashboard', label: 'Student Reports', icon: 'clipboard-list' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell' }
+      ],
       student: [
         { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
         { id: 'report', label: 'Submit Report', icon: 'plus-circle' },
         { id: 'myreports', label: 'My Reports', icon: 'list' },
+        { id: 'campusreports', label: 'Campus Reports', icon: 'users' },
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       faculty: [
         { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
         { id: 'bookings', label: 'Classes & Bookings', icon: 'calendar' },
-        { id: 'report', label: 'Report Issue', icon: 'plus-circle' },
-        { id: 'myreports', label: 'My Reports', icon: 'list' },
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       technician: [
