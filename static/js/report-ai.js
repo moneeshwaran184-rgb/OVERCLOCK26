@@ -7,10 +7,10 @@ const ReportAI={
  const signature=JSON.stringify([description,location,fields]);if(signature===this.signature&&this.result)return true;
  let panel=document.getElementById('reportAIReview');if(!panel){panel=document.createElement('div');panel.id='reportAIReview';panel.className='p-4 my-4 rounded-xl border space-y-3';document.getElementById('submitReportBtn').parentElement.before(panel);}
  panel.textContent='Checking similar campus problems with AI…';
- try{const {data,error}=await API.client.functions.invoke('rapid-action',{body:{description,location,college_id:m.college_id,...fields}});if(error||data?.error){
+ try{const {data,error}=await API.client.functions.invoke('campusops-ai',{body:{description,location,college_id:m.college_id,...fields}});if(error||data?.error){
  let message=data?.error;
  if(error?.context){const status=error.context.status;try{const detail=await error.context.clone().json();message=detail.error||detail.message||message;}catch{}
- if(status===404)message='AI function is not deployed. Check that the rapid-action Supabase Edge Function is deployed in the OVERCLOCK26 project.';
+ if(status===404)message='AI function is not deployed. Deploy campusops-ai in the OVERCLOCK26 Supabase project.';
  if(status===401)message='AI authentication failed. Sign out and sign in again. If this persists, check the Edge Function authentication configuration.';
  }throw new Error(message||'Could not reach the AI service. Check your connection and try again.');
  }

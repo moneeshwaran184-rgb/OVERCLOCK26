@@ -137,7 +137,7 @@ const App = {
 
     try {
     // Trigger tab specific data loads
-    if (tabName === 'dashboard' && window.Dashboard) {
+    if(tabName==='emailintake'){await EmailIntake.load();} else if (tabName === 'dashboard' && window.Dashboard) {
       await window.Dashboard.renderRoleDashboard();
     } else if (tabName === 'report' && window.ReportForm) {
       await window.ReportForm.loadReferenceData();
@@ -185,7 +185,7 @@ const App = {
 
     switch (role) {
       case 'report_admin':
-        return ['dashboard','notifications'].includes(tab);
+        return ['dashboard','emailintake','notifications'].includes(tab);
       case 'student':
         return ['dashboard', 'report', 'myreports', 'campusreports', 'notifications'].includes(tab);
       case 'faculty':
@@ -406,6 +406,7 @@ const App = {
       ],
       report_admin: [
         { id: 'dashboard', label: 'Student Reports', icon: 'clipboard-list' },
+          { id: 'emailintake', label: 'Email Intake', icon: 'mail' },
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       student: [
