@@ -193,7 +193,7 @@ const App = {
       case 'technician':
         return ['dashboard', 'workorders', 'notifications'].includes(tab);
       case 'department_manager':
-        return ['dashboard', 'operations', 'approvals', 'report', 'analytics', 'notifications'].includes(tab);
+        return ['dashboard', 'inventory', 'operations', 'approvals', 'report', 'analytics', 'notifications'].includes(tab);
       case 'facilities_admin':
         return ['dashboard', 'rooms', 'operations', 'workorders', 'inventory', 'bookings', 'approvals', 'analytics', 'notifications'].includes(tab);
       case 'procurement_approver':
@@ -427,6 +427,7 @@ const App = {
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       department_manager: [
+        { id: 'inventory', label: 'Inventory', icon: 'package' },
         { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
         { id: 'operations', label: 'Incident Queue', icon: 'alert-triangle' },
         { id: 'approvals', label: 'Approvals', icon: 'file-check' },

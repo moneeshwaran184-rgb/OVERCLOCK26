@@ -62,7 +62,7 @@ const Inventory = {
     }
 
     const member = API._currentMember;
-    const canManage = member && member.role === 'facilities_admin';
+    const canManage = member && ['facilities_admin','department_manager'].includes(member.role);
 
     container.innerHTML = this.stockList.map(s => {
       const item = s.item || {};
