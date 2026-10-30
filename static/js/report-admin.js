@@ -1,5 +1,25 @@
 /* Report inbox stages are derived from persisted work orders, not local guesses. */
 const ReportAdmin = {
+  grouping:false, groupedSignature:'', groupRetryAt:0,
+  async groupNewReports(force=false){
+    if(this.grouping||this.busy||!document.getElementById('adminGroupingStatus'))return;
+    const member=await API.getActiveMembership();if(member?.role!=='report_admin')return;
+    const pending=this.reports.filter(r=>this.stageFor(r)==='new');
+    const signature=JSON.stringify([member.college_id,pending.map(r=>[r.id,r.description,r.room_id,r.asset_id,r.category,r.equipment_description])]);
+    if(!force&&(signature===this.groupedSignature||Date.now()<this.groupRetryAt))return;
+    this.grouping=true;
+    const status=document.getElementById('adminGroupingStatus');status.textContent='AI is checking new reports for duplicate issues…';
+    try{
+      const {data,error}=await API.client.functions.invoke('campusops-group-reports',{body:{college_id:member.college_id}});
+      if(error||data?.error)throw new Error(data?.error||'Deploy campusops-group-reports and the admin grouping SQL, then retry.');
+      if(API._currentMember?.college_id!==member.college_id||API._currentMember?.role!=='report_admin')return;
+      if(data.merged){Object.assign(this,await this.fetchData());if(document.getElementById('adminReportsList'))this.render();}
+      status.textContent=data.remaining?'AI review is continuing on the next refresh.':`AI duplicate review complete. ${data.merged} report(s) combined this pass.`;
+      if(!data.remaining)this.groupedSignature=signature;
+      this.groupRetryAt=Date.now()+10000;
+    }catch(e){status.textContent='AI grouping unavailable: '+e.message;this.groupRetryAt=Date.now()+60000;}
+    finally{this.grouping=false;}
+  },
   aiCache:new Map(), aiPending:new Set(),
   aiKey(r){return JSON.stringify([API._currentMember?.user_id,r.college_id,r.id,r.description,r.room_id,r.equipment_description,r.category]);},
   aiFor(r){return this.aiCache.get(this.aiKey(r));},
@@ -31,7 +51,7 @@ const ReportAdmin = {
     const member = await API.getActiveMembership();
     if (!member || member.role !== 'report_admin') throw new Error('Report administrator access required.');
     const [result, work] = await Promise.all([
-      API.client.from('campusops_reports').select('*,reporter:campusops_members!campusops_reports_college_id_reporter_id_fkey!inner(full_name,role),campus:campusops_campuses(name),department:campusops_departments(name),room:campusops_rooms(name,building:campusops_buildings(name))').eq('college_id',member.college_id).eq('reporter.role','student').order('created_at',{ascending:false}).limit(200),
+      API.client.rpc('campusops_admin_report_groups',{p_college:member.college_id}),
       API.getWorkOrders(member.college_id)
     ]);
     if (result.error) throw result.error;
@@ -45,12 +65,14 @@ const ReportAdmin = {
       container.innerHTML = `<div class="space-y-5">
         <header class="rounded-3xl bg-indigo-800 text-white p-6"><span class="text-xs uppercase tracking-wider">Report administration</span><h1 class="text-2xl font-bold mt-2">Student reports</h1><p class="text-sm mt-2">Assign new reports, track each technician’s work, and review completed repairs.</p></header>
         <div id="adminReportTabs" role="tablist" aria-label="Report stages" class="flex flex-wrap gap-2"></div>
+        <div class="p-3 border rounded-xl"><p id="adminGroupingStatus" role="status">AI duplicate review pending.</p><button type="button" onclick="ReportAdmin.groupNewReports(true)" class="underline mt-2">Check duplicates with AI</button></div>
         <div class="flex flex-wrap gap-3"><label class="flex-1 text-sm">Find a report<input id="adminReportSearch" placeholder="Student, technician, issue, department or room" class="block w-full mt-1 p-3 border rounded-xl bg-white dark:bg-slate-900"></label><button type="button" id="adminReportsRefresh" class="px-4 py-2 border rounded-xl">Refresh</button></div>
-        <p id="adminReportRefreshStatus" role="status" class="text-xs text-slate-500">Updates automatically every 10 seconds. Showing up to 200 recent student reports.</p>
+        <p id="adminReportRefreshStatus" role="status" class="text-xs text-slate-500">Updates automatically every 10 seconds. Showing grouped student reports.</p>
         <p class="text-xs text-slate-500">Review order: Critical → High → Medium → Low. Reports are sorted by AI review when available. Reviews are reused during this session.</p><div id="adminReportsList" role="tabpanel" class="flex flex-col gap-4"></div></div>`;
       document.getElementById('adminReportSearch').oninput = () => this.render();
       document.getElementById('adminReportsRefresh').onclick = () => this.refresh();
       this.render();
+      void this.groupNewReports();
     } catch(error) {
       container.innerHTML = '<div class="p-6 border rounded-2xl"><h2 class="font-bold">Unable to load the report inbox</h2><p class="text-sm mt-2">'+this.escape(error.message)+'</p><button class="mt-3 underline" type="button">Retry</button></div>';
       container.querySelector('button').onclick = () => this.load(container);
@@ -63,6 +85,7 @@ const ReportAdmin = {
       const data = await this.fetchData();
       if (API._currentMember?.role !== 'report_admin' || !document.getElementById('adminReportsList')) return;
       Object.assign(this, data); this.render();
+      void this.groupNewReports();
       document.getElementById('adminReportRefreshStatus').textContent = 'Updated '+new Date().toLocaleTimeString()+'. Updates automatically every 10 seconds.';
     } catch(error) {
       const status = document.getElementById('adminReportRefreshStatus');
@@ -81,7 +104,7 @@ const ReportAdmin = {
       const jobs = this.jobsFor(r), stage = this.stageFor(r);
       return `<article class="p-5 bg-white dark:bg-slate-800 border rounded-2xl">
         <div class="flex justify-between text-xs"><strong>${stage==='new'?'Awaiting dispatch':stage==='completed'?'Completed':'Dispatched'}</strong><span class="px-2.5 py-1 rounded-full border font-semibold ${this.priorityClass(this.reviewPriority(r))}">${this.priorityLabel(this.reviewPriority(r))} review priority</span></div>
-        <h2 class="font-bold mt-3">${this.escape(r.description)}</h2><p class="text-xs mt-2 font-semibold">${1+Number(r.supporter_count||0)} student(s) affected</p><p class="text-sm mt-2">${this.escape(r.reporter?.full_name)} · ${this.escape(r.department?.name)}</p>
+        <h2 class="font-bold mt-3">${this.escape(r.description)}</h2><p class="text-xs mt-2 font-semibold">${r.affected_count || 1} student(s) affected</p><p class="text-sm mt-2">${this.escape(r.reporter?.full_name)} · ${this.escape(r.department?.name)}</p>
         <p class="text-xs mt-1 text-slate-500">${this.escape(r.campus?.name)} · ${this.escape(r.room?.building?.name)} · ${this.escape(r.room?.name || 'Room needed')}</p>
         <p class="text-xs mt-2">${this.escape(r.category)}${r.equipment_description?' · '+this.escape(r.equipment_description):''}</p>
         <details class="mt-3 text-sm"><summary class="cursor-pointer text-xs font-semibold text-slate-500">AI priority review</summary><div class="mt-2 p-3 border rounded-xl">
@@ -110,6 +133,14 @@ const ReportAdmin = {
     document.getElementById('reportAdminDispatchBtn').disabled=true;
     App.openModal('reportAdminModal');
     ReportPhotos.render(document.getElementById('reportAdminPhotos'),id,false);
+    const detail=document.getElementById('reportAdminDetail');
+    for(const child of r.linked_reports||[]){
+      const section=document.createElement('section');section.className='p-3 mt-3 border rounded-xl';
+      const label=document.createElement('p');label.textContent=child.reporter_name+' · '+new Date(child.created_at).toLocaleString()+' · '+child.description;section.append(label);
+      const photos=document.createElement('div');section.append(photos);detail.append(section);ReportPhotos.render(photos,child.id,false);
+      if(!closed&&!jobs.length){const button=document.createElement('button');button.type='button';button.className='underline';button.textContent='Unlink into a separate issue';button.onclick=async()=>{button.disabled=true;try{const {error}=await API.client.rpc('campusops_unlink_duplicate',{p_report:child.id});if(error)throw error;App.closeModals();await this.load(this.container);}catch(e){App.showToast(e.message,'error');button.disabled=false;}};section.append(button);}
+    }
+
     if(canDispatch) try {
       const {data,error}=await API.client.rpc('campusops_report_technicians',{p_report:id});if(error)throw error;
       if(request!==this.detailRequest)return;
