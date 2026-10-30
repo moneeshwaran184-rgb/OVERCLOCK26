@@ -182,6 +182,7 @@ const ReportForm = {
       if (!await ReportAI.review()) return;
       const result = await API.submitReport({
         p_assessment: ReportAI.result.assessment_id,
+        p_choice: ReportAI.choice,p_target: ReportAI.target,
         p_college: member.college_id,
         p_campus: campusId,
         p_department: departmentId,
