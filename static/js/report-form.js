@@ -228,7 +228,7 @@ const ReportForm = {
   },
 
   resetForm() {
-    ReportAI.signature="";ReportAI.result=null;document.getElementById("reportAIReview")?.remove();
+    ReportAI.signature="";ReportAI.result=null;ReportAI.clarificationAssessment=null;document.getElementById("reportAIReview")?.remove();
     const form = document.getElementById('issueReportForm');
     if (form) form.reset();
     ReportPhotos.clearPreview();

@@ -69,7 +69,7 @@ const ReportAdmin = {
         <div id="adminReportTabs" role="tablist" aria-label="Report stages" class="flex flex-wrap gap-2"></div>
         <div class="p-3 border rounded-xl"><p id="adminGroupingStatus" role="status">AI duplicate review pending.</p><button type="button" onclick="ReportAdmin.groupNewReports(true)" class="underline mt-2">Check duplicates with AI</button></div>
         <div class="flex flex-wrap gap-3"><label class="flex-1 text-sm">Find a report<input id="adminReportSearch" placeholder="Issue, technician or room" class="block w-full mt-1 p-3 border rounded-xl bg-white dark:bg-slate-900"></label><select id="adminReportDateFilter" class="p-3 border rounded-xl bg-white dark:bg-slate-900" aria-label="Filter reports by age"><option value="0">Any date</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" id="adminReportsRefresh" class="px-4 py-2 border rounded-xl">Refresh</button></div>
-        <p id="adminReportRefreshStatus" role="status" class="text-xs text-slate-500">Updates automatically every 30 seconds. Showing grouped issues in the queue and individual reports in history.</p>
+        <p id="adminReportRefreshStatus" role="status" class="text-xs text-slate-500">Use Refresh to load the latest reports. Showing grouped issues in the queue and individual reports in history.</p>
         <p class="text-xs text-slate-500">Review order: Critical → High → Medium → Low.</p><div id="adminReportsList" role="tabpanel" class="flex flex-col gap-4"></div></div>`;
       document.getElementById('adminReportSearch').oninput = () => this.render();
       document.getElementById('adminReportDateFilter').onchange = () => this.render();
@@ -84,20 +84,21 @@ const ReportAdmin = {
     }
   },
   async refresh(manual=false) {
-    if(!manual && Date.now()-(this.lastRefresh||0)<30000)return;
-    this.lastRefresh=Date.now();
     if (this.loading || this.busy || !document.getElementById('adminReportsList')) return;
     this.loading = true;
+    const refreshButton=document.getElementById('adminReportsRefresh');
+    if(refreshButton){refreshButton.disabled=true;refreshButton.textContent='Refreshing…';}
+    document.getElementById('adminReportRefreshStatus').textContent='Fetching latest reports…';
     try {
       const data = await this.fetchData();
       if (API._currentMember?.role !== 'report_admin' || !document.getElementById('adminReportsList')) return;
-      if(JSON.stringify(data)!==JSON.stringify({reports:this.reports,work:this.work,historyReports:this.historyReports})){const y=window.scrollY;const expanded=new Set([...document.querySelectorAll("#adminReportsList article")].filter(a=>a.querySelector("details[open]")).map(a=>a.dataset.reportId));Object.assign(this,data);this.render();document.querySelectorAll("#adminReportsList article").forEach(a=>{if(expanded.has(a.dataset.reportId)&&a.querySelector("details"))a.querySelector("details").open=true;});window.scrollTo(0,y);}
-      document.getElementById('adminReportRefreshStatus').textContent = 'Updated '+new Date().toLocaleTimeString()+'. Updates automatically every 30 seconds.';
+      if(manual || JSON.stringify(data)!==JSON.stringify({reports:this.reports,work:this.work,historyReports:this.historyReports})){const y=window.scrollY;const expanded=new Set([...document.querySelectorAll("#adminReportsList article")].filter(a=>a.querySelector("details[open]")).map(a=>a.dataset.reportId));Object.assign(this,data);this.render();document.querySelectorAll("#adminReportsList article").forEach(a=>{if(expanded.has(a.dataset.reportId)&&a.querySelector("details"))a.querySelector("details").open=true;});window.scrollTo(0,y);}
+      document.getElementById('adminReportRefreshStatus').textContent = 'Updated '+new Date().toLocaleTimeString()+'. Use Refresh to load the latest reports.';
       void this.groupNewReports();
     } catch(error) {
       const status = document.getElementById('adminReportRefreshStatus');
       if(status) status.textContent = 'Refresh failed: '+error.message+'. Use Refresh to retry.';
-    } finally { this.loading = false; }
+    } finally { this.loading = false;if(refreshButton){refreshButton.disabled=false;refreshButton.textContent='Refresh';} }
   },
   selectStage(stage) { this.activeStage = stage; this.render(); },
   render() {

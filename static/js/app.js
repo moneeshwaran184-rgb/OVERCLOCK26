@@ -105,6 +105,9 @@ const App = {
     window.location.hash = tabName;
 
     // Toggle content visibility
+    if (tabName !== 'dashboard' && window.CampusHeroAnimation) {
+      window.CampusHeroAnimation.destroy();
+    }
     document.querySelectorAll('.tab-section').forEach(sec => {
       sec.classList.add('hidden');
     });

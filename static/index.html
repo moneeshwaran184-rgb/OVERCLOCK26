@@ -53,6 +53,11 @@
   <link rel="stylesheet" href="/static/css/workspace.css">
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col antialiased">
+  <!-- Fixed Fullscreen Background Campus Video Transition Canvas -->
+  <div id="campusFullscreenBg" class="fixed inset-0 w-screen h-screen pointer-events-none z-0 hidden transition-opacity duration-500 overflow-hidden" aria-hidden="true">
+    <canvas id="campusHeroCanvas" class="w-full h-full object-cover block"></canvas>
+    <div class="campus-global-overlay"></div>
+  </div>
 
   <!-- ================= TOP NAVIGATION BAR ================= -->
   <header class="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
@@ -1088,6 +1093,7 @@
   <script src="/static/js/myreports.js"></script>
   <script src="/static/js/campus-reports.js"></script>
   <script src="/static/js/analytics.js"></script>
+  <script src="/static/js/campus-hero-animation.js"></script>
   <script src="/static/js/dashboard.js"></script>
   <script src="/static/js/app.js"></script>
 </body>

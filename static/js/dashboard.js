@@ -19,6 +19,10 @@ const Dashboard = {
       return;
     }
 
+    if (window.CampusHeroAnimation) {
+      window.CampusHeroAnimation.destroy();
+    }
+
     let member;
     try {
       member = await API.getActiveMembership();
@@ -95,40 +99,374 @@ const Dashboard = {
   renderPublicLanding(container) {
     container.innerHTML = `
       <div class="college-home">
-        <section class="college-hero" aria-labelledby="collegeWelcome">
-          <div class="college-hero-copy">
-            <p class="college-eyebrow">CAMPUS LIFE, CONNECTED</p>
-            <h1 id="collegeWelcome">A better day<br>on campus<br><em>starts here.</em></h1>
-            <p class="college-intro">Welcome to CampusOps Engineering College. Your shared space for campus services, classroom coordination and a well-cared-for learning environment.</p>
-            <div class="college-hero-actions">
-              <button class="college-primary" onclick="App.openModal('authModal')">Access your portal <span aria-hidden="true">↗</span></button>
-              <button class="college-secondary" onclick="document.getElementById('campusOverview').scrollIntoView({behavior:'smooth'})">Explore our campus <span aria-hidden="true">↓</span></button>
+        <!-- HERO BANNER -->
+        <header class="college-hero-header" aria-labelledby="collegeWelcome">
+          <div class="campus-hero-badge">
+            <span class="campus-hero-badge-pulse"></span>
+            <span>Campus Infrastructure Platform</span>
+          </div>
+          <h1 id="collegeWelcome" class="campus-hero-title">
+            A calmer, smarter day on campus<br><em>starts here.</em>
+          </h1>
+          <p class="campus-hero-subtitle">
+            From classroom fixtures to historic central facilities — experience unified reporting, AI-powered triage, and transparent maintenance coordination.
+          </p>
+          <div class="campus-hero-actions">
+            <button class="btn-college-primary" onclick="App.switchTab('report')">
+              <i data-lucide="alert-circle" class="w-4 h-4"></i>
+              <span>Submit a Report</span>
+            </button>
+            <button class="btn-college-secondary" onclick="App.openModal('authModal')">
+              <i data-lucide="log-in" class="w-4 h-4"></i>
+              <span>Sign In to Portal</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- FLOATING FLIGHT TRACKER DOCK -->
+        <div class="campus-hero-floating-dock" id="campusFloatingDock">
+          <div class="hero-flight-point">
+            <span class="hero-flight-dot"></span>
+            <span>Photo 1 · Aerial Quad</span>
+          </div>
+
+          <div class="hero-scrubber-track" id="heroScrubberTrack" title="Click or scroll to transition view">
+            <div class="hero-scrubber-fill" id="heroTransitionBar"></div>
+          </div>
+
+          <div class="hero-flight-point">
+            <i data-lucide="building-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Photo 2 · Clock Tower</span>
+          </div>
+
+          <div class="hero-flight-status">
+            <span class="hero-stage-badge" id="heroTransitionStage">Photo 1 · Aerial Quad</span>
+            <span class="text-slate-400">·</span>
+            <span class="text-white font-mono font-bold" id="heroTransitionPercent">0%</span>
+            <span class="hero-scroll-hint hidden md:flex">
+              <i data-lucide="arrow-down" class="w-3 h-3"></i>
+              <span>Scroll to blend view</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- EXTENDED LANDING SECTIONS -->
+        <div class="college-landing-sections">
+
+          <!-- 1. THE CAMPUS PROBLEM -->
+          <section id="section-problem" class="college-section" aria-labelledby="problemTitle">
+            <div class="section-tagline">01 / The Operational Challenge</div>
+            <h2 id="problemTitle" class="section-heading-lg">Maintenance reports get lost across messages.</h2>
+            <p class="section-desc-lg">
+              When issues are reported across scattered chat groups, hallway conversations, and inbox threads, staff struggle to track requests, duplicate complaints accumulate, and resolution slows to a crawl.
+            </p>
+
+            <div class="problem-card-grid">
+              <div class="problem-card problem-card-chaos">
+                <div class="problem-card-header">
+                  <div class="problem-icon-box problem-icon-chaos">
+                    <i data-lucide="message-square-off" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-lg text-rose-950 dark:text-rose-200">The Fragmented Approach</h3>
+                    <p class="text-xs text-rose-700/80 dark:text-rose-300/80">How campus maintenance breaks down</p>
+                  </div>
+                </div>
+                <ul class="problem-list problem-list-chaos">
+                  <li>
+                    <i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"></i>
+                    <span><strong>Unclear Locations:</strong> "AC broken in 2nd floor lab" — leaving technicians guessing between 6 different rooms.</span>
+                  </li>
+                  <li>
+                    <i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"></i>
+                    <span><strong>Duplicate Clutter:</strong> Multiple students post about the same broken projector in separate WhatsApp chats.</span>
+                  </li>
+                  <li>
+                    <i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"></i>
+                    <span><strong>Lost Accountability:</strong> Without ticket tracking, urgent electrical or plumbing faults get buried.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="problem-card problem-card-solution">
+                <div class="problem-card-header">
+                  <div class="problem-icon-box problem-icon-solution">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-lg text-emerald-950 dark:text-emerald-200">The CampusOps Standard</h3>
+                    <p class="text-xs text-emerald-700/80 dark:text-emerald-300/80">Coordinated, accountable operations</p>
+                  </div>
+                </div>
+                <ul class="problem-list problem-list-solution">
+                  <li>
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                    <span><strong>Pinpoint Accuracy:</strong> Exact Building, Floor, and Room selection ensures zero confusion.</span>
+                  </li>
+                  <li>
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                    <span><strong>Intelligent Grouping:</strong> Reports for the same space are grouped to prevent duplicate work.</span>
+                  </li>
+                  <li>
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                    <span><strong>Full Status Visibility:</strong> Requester and staff see live progress from triage to fix.</span>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <p class="college-access-note">For students, faculty and college staff.</p>
-          </div>
-          <div class="college-scene" aria-hidden="true">
-            <div class="scene-orbit"></div><div class="scene-sun"></div>
-            <div class="scene-building scene-building-back"><span></span><span></span><span></span><span></span></div>
-            <div class="scene-building scene-building-front"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-            <div class="scene-path"></div><div class="scene-tree scene-tree-one"></div><div class="scene-tree scene-tree-two"></div>
-            <div class="scene-caption"><span class="scene-dot"></span> MAIN CAMPUS <strong>A place to learn. A place to belong.</strong></div>
-          </div>
-        </section>
-        <section class="college-overview" id="campusOverview" aria-labelledby="campusOverviewTitle">
-          <div class="college-section-heading"><p class="college-eyebrow">OUR COLLEGE</p><h2 id="campusOverviewTitle">Spaces that support your day.</h2><p>From classrooms to laboratories, CampusOps brings everyday campus needs into one place.</p></div>
-          <div class="college-space-grid">
-            <article class="college-space-card"><span class="college-card-number">01 / LEARNING</span><i data-lucide="book-open" aria-hidden="true"></i><h3>Academic Block</h3><p>Main Campus classrooms with facilities support for CSE, IT and ECE. Faculty manage class bookings.</p></article>
-            <article class="college-space-card"><span class="college-card-number">02 / DISCOVERY</span><i data-lucide="flask-conical" aria-hidden="true"></i><h3>Main & Sub Campus</h3><p>Technology Block and Electronics Block add teaching rooms and labs alongside the Main Campus Laboratory Block.</p></article>
-            <article class="college-space-card"><span class="college-card-number">03 / CAMPUS CARE</span><i data-lucide="heart-handshake" aria-hidden="true"></i><h3>Here to help</h3><p>Report a facilities issue, follow progress and stay informed when maintenance affects your campus activities.</p></article>
-          </div>
-        </section>
-        <section class="college-service-strip" aria-labelledby="collegeServiceTitle">
-          <div><p class="college-eyebrow">EVERYDAY SUPPORT</p><h2 id="collegeServiceTitle">See something that needs attention?</h2><p>Sign in, choose the location and describe the issue. You can follow updates in My Reports.</p></div>
-          <button class="college-primary" onclick="App.openModal('authModal')">Sign in to get started <span aria-hidden="true">→</span></button>
-        </section>
-        <footer class="college-footer"><span>CampusOps Engineering College · Main Campus</span><span>Campus services, together.</span></footer>
+          </section>
+
+          <!-- 2. ONE PLACE TO REPORT -->
+          <section id="section-reporting" class="college-section" aria-labelledby="reportingTitle">
+            <div class="section-tagline">02 / Unified Submission</div>
+            <h2 id="reportingTitle" class="section-heading-lg">One place to report: fast, structured, and verified.</h2>
+            <p class="section-desc-lg">
+              Students and faculty describe the fault, select the campus location, and attach photo proof directly from their phone or computer in under 60 seconds.
+            </p>
+
+            <div class="reporting-flow-container">
+              <div class="steps-list">
+                <div class="step-item">
+                  <div class="step-number">01</div>
+                  <div class="step-text">
+                    <h4>Choose Exact Campus Location</h4>
+                    <p>Select the Academic Block, Floor, and Room Number (e.g., Block A, Lab 204) so technicians know where to go.</p>
+                  </div>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">02</div>
+                  <div class="step-text">
+                    <h4>Describe the Fault</h4>
+                    <p>Outline what is broken or malfunctioning — whether it's lighting, air conditioning, projector, plumbing, or classroom furniture.</p>
+                  </div>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">03</div>
+                  <div class="step-text">
+                    <h4>Attach Visual Proof</h4>
+                    <p>Upload a clear photo so technicians can prepare the right replacement spares and tools before arriving on site.</p>
+                  </div>
+                </div>
+                <div class="pt-2">
+                  <button class="btn-college-primary" onclick="App.switchTab('report')">
+                    <i data-lucide="file-plus" class="w-4 h-4"></i>
+                    <span>Open Report Form</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Interactive Mock Report Card -->
+              <div class="report-mock-card">
+                <div class="mock-ticket-header">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">TKT-2026-0842</span>
+                  </div>
+                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50">Electrical</span>
+                </div>
+                <div class="space-y-3">
+                  <h4 class="font-bold text-sm text-slate-900 dark:text-white">Ceiling Projector HDMI Port & Power Trip</h4>
+                  <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Academic Block A · 3rd Floor · Room 304</span>
+                  </div>
+                  <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+                    "Projector loses signal midway through lectures; spark sound observed near wall switch."
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] pt-1 text-slate-400">
+                    <span class="flex items-center gap-1"><i data-lucide="image" class="w-3.5 h-3.5"></i> Photo Attached (1.2 MB)</span>
+                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Triage Score: High</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. AI-ASSISTED REVIEW -->
+          <section id="section-ai-review" class="college-section" aria-labelledby="aiTitle">
+            <div class="section-tagline">03 / Intelligent Triage</div>
+            <h2 id="aiTitle" class="section-heading-lg">AI-assisted review: Smart suggestions, human authority.</h2>
+            <p class="section-desc-lg">
+              CampusOps AI assists facilities teams by clarifying vague problem statements, categorizing urgency, and clustering duplicate reports — while college administrators retain 100% final decision authority.
+            </p>
+
+            <div class="ai-review-grid">
+              <div class="ai-card">
+                <div class="ai-card-icon">
+                  <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <h3>Intelligent Clarification</h3>
+                <p>AI prompts the student if essential troubleshooting details are missing, such as equipment model numbers or specific breaker indicators, before dispatching.</p>
+              </div>
+
+              <div class="ai-card">
+                <div class="ai-card-icon">
+                  <i data-lucide="copy-check" class="w-5 h-5"></i>
+                </div>
+                <h3>Duplicate Detection</h3>
+                <p>Automatically flags when multiple students or faculty submit reports for the same fault in the same room, bundling them into one master dispatch ticket.</p>
+              </div>
+
+              <div class="ai-card">
+                <div class="ai-card-icon">
+                  <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <h3>Safety & Priority Scoring</h3>
+                <p>Calculates severity levels (Critical, High, Medium, Low) based on safety hazards, live wires, water leaks, or immediate classroom impact.</p>
+              </div>
+            </div>
+
+            <div class="ai-human-banner">
+              <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                <i data-lucide="user-check" class="w-5 h-5"></i>
+              </div>
+              <div class="text-xs sm:text-sm text-indigo-950 dark:text-indigo-200">
+                <strong>Human-in-the-Loop Standard:</strong> AI never dispatches contractors or closes reports automatically. College administrators and maintenance supervisors verify recommendations and approve every single work order.
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. TRACK PROGRESS -->
+          <section id="section-tracking" class="college-section" aria-labelledby="trackTitle">
+            <div class="section-tagline">04 / Lifecycle Transparency</div>
+            <h2 id="trackTitle" class="section-heading-lg">Track progress from submission to resolution.</h2>
+            <p class="section-desc-lg">
+              Every maintenance request follows a clear, transparent four-stage lifecycle so students, faculty, and administrators always know the exact status.
+            </p>
+
+            <div class="progress-stepper">
+              <div class="stepper-card">
+                <div class="stepper-header">
+                  <span class="stepper-badge">Step 1</span>
+                  <i data-lucide="send" class="w-4 h-4 text-emerald-600"></i>
+                </div>
+                <h3>1. Submission</h3>
+                <p>Requester submits fault description, room location, and photo evidence. The system assigns a unique ticket tracking ID.</p>
+              </div>
+
+              <div class="stepper-card">
+                <div class="stepper-header">
+                  <span class="stepper-badge">Step 2</span>
+                  <i data-lucide="clipboard-check" class="w-4 h-4 text-indigo-600"></i>
+                </div>
+                <h3>2. Admin Review</h3>
+                <p>Facilities admin validates report, evaluates AI triage suggestions, checks inventory spares, and approves the work order.</p>
+              </div>
+
+              <div class="stepper-card">
+                <div class="stepper-header">
+                  <span class="stepper-badge">Step 3</span>
+                  <i data-lucide="wrench" class="w-4 h-4 text-amber-600"></i>
+                </div>
+                <h3>3. Technician Assignment</h3>
+                <p>Assigned specialized technician (electrician, plumber, HVAC specialist) accepts the ticket and heads to the campus site.</p>
+              </div>
+
+              <div class="stepper-card">
+                <div class="stepper-header">
+                  <span class="stepper-badge">Step 4</span>
+                  <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                </div>
+                <h3>4. Verified Resolution</h3>
+                <p>Repair completed, resolution proof photo logged, and requester receives instant notification of successful sign-off.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. CAMPUS OPERATIONS TOOLS -->
+          <section id="section-tools" class="college-section" aria-labelledby="toolsTitle">
+            <div class="section-tagline">05 / Operations Infrastructure</div>
+            <h2 id="toolsTitle" class="section-heading-lg">Comprehensive campus operations tools.</h2>
+            <p class="section-desc-lg">
+              CampusOps provides facilities teams, faculty, and department heads with the specialized tools needed to keep campus infrastructure running flawlessly.
+            </p>
+
+            <div class="tools-grid">
+              <div class="tool-card">
+                <div>
+                  <div class="tool-icon tool-icon-hall">
+                    <i data-lucide="calendar-check-2" class="w-6 h-6"></i>
+                  </div>
+                  <h3>Hall Booking Conflict Prevention</h3>
+                  <p>Real-time calendar verification for seminar halls, auditoriums, and smart conference rooms to eliminate double-booking clashes between departments.</p>
+                </div>
+                <ul class="tool-feature-list">
+                  <li><i data-lucide="check" class="w-3.5 h-3.5 text-sky-600"></i> Automated schedule collision alerts</li>
+                  <li><i data-lucide="check" class="w-3.5 h-3.5 text-sky-600"></i> Department head approval routing</li>
+                </ul>
+              </div>
+
+              <div class="tool-card">
+                <div>
+                  <div class="tool-icon tool-icon-work">
+                    <i data-lucide="hammer" class="w-6 h-6"></i>
+                  </div>
+                  <h3>Maintenance Work Orders</h3>
+                  <p>Structured dispatch checklists, priority triage, technician assignment, labor hour logging, and root-cause recording for facilities teams.</p>
+                </div>
+                <ul class="tool-feature-list">
+                  <li><i data-lucide="check" class="w-3.5 h-3.5 text-amber-600"></i> Real-time technician task dispatch</li>
+                  <li><i data-lucide="check" class="w-3.5 h-3.5 text-amber-600"></i> Resolution proof & audit records</li>
+                </ul>
+              </div>
+
+              <div class="tool-card">
+                <div>
+                  <div class="tool-icon tool-icon-stock">
+                    <i data-lucide="boxes" class="w-6 h-6"></i>
+                  </div>
+                  <h3>Stock & Spares Inventory Tracking</h3>
+                  <p>Centralized tracking of maintenance consumables (LED tubes, plumbing valves, projector lamps, wire spools) with minimum threshold alerts.</p>
+                </div>
+                <ul class="tool-feature-list">
+                  <li><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Low-stock replenishment alerts</li>
+                  <li><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Departmental purchase requisitions</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. CALL TO ACTION -->
+          <section id="section-cta" class="college-section" aria-labelledby="ctaTitle">
+            <div class="college-cta-banner">
+              <div class="cta-glow"></div>
+              <div class="college-cta-copy">
+                <h2 id="ctaTitle">Keep our campus running at its best.</h2>
+                <p>
+                  Whether you are a student reporting a classroom issue, faculty reserving a seminar hall, or a technician resolving a work order — CampusOps keeps the college moving forward together.
+                </p>
+              </div>
+              <div class="college-cta-buttons">
+                <button class="btn-college-primary" onclick="App.switchTab('report')">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                  <span>Submit a Campus Report</span>
+                </button>
+                <button class="btn-college-secondary" onclick="App.openModal('authModal')">
+                  <i data-lucide="log-in" class="w-4 h-4"></i>
+                  <span>Sign In to Portal</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- COLLEGE FOOTER -->
+          <footer class="college-landing-footer">
+            <div class="flex items-center gap-2">
+              <i data-lucide="building" class="w-4 h-4 text-emerald-600"></i>
+              <span>CampusOps Engineering College · Facilities & Operations Division</span>
+            </div>
+            <div>
+              <span>Main Campus & Technology Blocks · Real-time Infrastructure Care</span>
+            </div>
+          </footer>
+
+        </div>
       </div>
     `;
+
+    if (window.CampusHeroAnimation) {
+      window.CampusHeroAnimation.init();
+    }
     if (window.App) window.App.refreshIcons();
   },
 
