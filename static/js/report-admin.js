@@ -1,21 +1,47 @@
 /* Report inbox stages are derived from persisted work orders, not local guesses. */
 const ReportAdmin = {
-  grouping:false, groupedSignature:'', groupRetryAt:0,
+  grouping:false, groupedSignature:'', groupRetryAt:0, groupPasses:0,
   async groupNewReports(force=false){
     if(this.grouping||this.busy||!document.getElementById('adminGroupingStatus'))return;
     const member=await API.getActiveMembership();if(member?.role!=='report_admin')return;
     const pending=this.reports.filter(r=>this.stageFor(r)==='new');
     const signature=JSON.stringify([member.college_id,pending.map(r=>[r.id,r.description,r.room_id,r.asset_id,r.category,r.equipment_description])]);
     if(!force&&(signature===this.groupedSignature||Date.now()<this.groupRetryAt))return;
+    if(!force)this.groupPasses=0;
     this.grouping=true;
     const status=document.getElementById('adminGroupingStatus');status.textContent='AI is checking new reports for duplicate issues…';
     try{
       const {data,error}=await API.client.functions.invoke('campusops-group-reports',{body:{college_id:member.college_id}});
       if(error||data?.error)throw new Error(data?.error||'Deploy campusops-group-reports and the admin grouping SQL, then retry.');
       if(API._currentMember?.college_id!==member.college_id||API._currentMember?.role!=='report_admin')return;
-      if(data.merged){Object.assign(this,await this.fetchData());if(document.getElementById('adminReportsList'))this.render();}
-      status.textContent=data.remaining?'AI review is continuing on the next refresh.':`AI duplicate review complete. ${data.merged} report(s) combined this pass.`;
-      if(!data.remaining)this.groupedSignature=signature;
+      const merged=Number(data.merged||0);
+      if(merged){Object.assign(this,await this.fetchData());if(document.getElementById('adminReportsList'))this.render();}
+      if(data.candidates===undefined){
+        status.textContent=data.remaining?'AI review is continuing on the next refresh.':`AI duplicate review complete. ${merged} report(s) combined this pass.`;
+        if(!data.remaining)this.groupedSignature=signature;
+        this.groupRetryAt=Date.now()+10000;
+        return;
+      }
+      const candidates=Number(data.candidates)||0, pairs=Number(data.pairs)||0, reviewed=Number(data.reviewed)||0;
+      const skipped=data.skipped||{};
+      let message;
+      if(candidates<2){
+        const ineligible=Math.max(0,pending.length-candidates);
+        message=`Only ${candidates} open student report(s) are eligible for AI comparison.`;
+        message+=ineligible?` ${ineligible} of the ${pending.length} new report(s) have no room, or already have a work order, so they are skipped.`:' At least two reports in the same room are needed.';
+      }else if(!pairs)message=`${candidates} report(s) checked, but no two share the same room${skipped.other_room?` (${skipped.other_room} pair(s) skipped: different rooms)`:''}. Duplicate detection only merges reports from one room.`;
+      else message=`AI compared ${pairs} pair(s), reviewed ${reviewed} with the model and combined ${merged} report(s) this pass${skipped.category?` (${skipped.category} pair(s) skipped: different categories)`:''}.`;
+      const near=Number(data.near_miss)||0, refused=Number(data.refused)||0;
+      if(near)message+=` ${near} pair(s) looked similar but scored below the 90% confidence required to merge automatically.`;
+      if(refused)message+=` ${refused} merge(s) were blocked by the database safety rules — apply supabase/20261101_duplicate_group_category_fix.sql.`;
+      if(data.remaining)message+=' More pairs are queued — continuing automatically…';
+      status.textContent=message;
+      if(!data.remaining){
+        this.groupedSignature=signature;this.groupPasses=0;
+      }else if(this.groupPasses<3){
+        this.groupPasses++;
+        setTimeout(()=>{void this.groupNewReports(true);},1200);
+      }
       this.groupRetryAt=Date.now()+10000;
     }catch(e){status.textContent='AI grouping unavailable: '+e.message;this.groupRetryAt=Date.now()+60000;}
     finally{this.grouping=false;}

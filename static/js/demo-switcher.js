@@ -119,8 +119,56 @@ const DemoSwitcher = (() => {
   }
 
   function _remove(email) {
+    const acct = _accounts.find(a => a.email === email);
+    if (email === _curEmail) {
+      _toast('You are signed in to this account. Sign out before deleting it.', 'error');
+      return;
+    }
+    if (!window.confirm(`Delete ${acct?.full_name || email} from this device?\n\nThe login itself is not deleted and can be added again later.`)) return;
     _accounts = _accounts.filter(a => a.email !== email);
     _save();
+    renderDropdown();
+    _toast(`Deleted ${acct?.full_name || email} from this device.`, 'success');
+  }
+
+  /**
+   * Save the signed-in profile to the saved accounts list.
+   * Re-reads the live Supabase session so a missing name/role gets repaired.
+   */
+  async function _saveAccount(email) {
+    const existing = _accounts.find(a => a.email === email) || { email };
+    if (email === _curEmail && window.API) {
+      try {
+        const user   = window.API._currentUser || await window.API.getCurrentUser();
+        const member = await window.API.getActiveMembership(true).catch(() => null);
+        if (user) {
+          upsert({
+            email:    user.email,
+            full_name: member?.full_name || existing.full_name,
+            role:      member?.role      || existing.role,
+            col_code:  member?.college?.code || existing.col_code,
+            col_name:  member?.college?.name || existing.col_name,
+            dept:      member?.department?.name || existing.dept,
+            uid:       user.id,
+          });
+        } else {
+          upsert(existing);
+        }
+      } catch {
+        upsert(existing);
+      }
+    } else {
+      upsert(existing);
+    }
+    renderDropdown();
+    renderAvatar();
+    const saved = _accounts.find(a => a.email === email);
+    _toast(`Saved ${saved?.full_name || email} to your accounts.`, 'success');
+  }
+
+  function _toast(msg, type = 'success') {
+    if (window.App?.showToast) window.App.showToast(msg, type);
+    else console.log('[DemoSwitcher]', msg);
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -220,8 +268,13 @@ const DemoSwitcher = (() => {
     </div>
   </div>
   ${isActive
-    ? `<svg class="ds-check-ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`
-    : `<button class="ds-rm-btn" data-rm-email="${_esc(acct.email)}" type="button" title="Remove from list" onclick="event.stopPropagation()">✕</button>`
+    ? `<div class="ds-card-actions">
+         <button class="ds-act ds-act-save" data-save-email="${_esc(acct.email)}" type="button" title="Save this profile to your saved accounts">Save account</button>
+         <svg class="ds-check-ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+       </div>`
+    : `<div class="ds-card-actions">
+         <button class="ds-act ds-act-del" data-rm-email="${_esc(acct.email)}" type="button" title="Delete this account from the list">Delete account</button>
+       </div>`
   }
 </div>`;
   }
@@ -555,12 +608,21 @@ const DemoSwitcher = (() => {
         return;
       }
 
-      // Remove account
+      // Save the active profile to the saved list
+      const saveBtn = e.target.closest('[data-save-email]');
+      if (saveBtn) {
+        e.stopPropagation();
+        const email = saveBtn.dataset.saveEmail;
+        if (email) _saveAccount(email);
+        return;
+      }
+
+      // Delete account from the saved list
       const rmBtn = e.target.closest('[data-rm-email]');
       if (rmBtn) {
         e.stopPropagation();
         const email = rmBtn.dataset.rmEmail;
-        if (email && email !== _curEmail) { _remove(email); renderDropdown(); }
+        if (email) _remove(email);
         return;
       }
 
@@ -594,6 +656,7 @@ const DemoSwitcher = (() => {
     // Keyboard: Enter/Space on account card
     document.addEventListener('keydown', e => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.target.closest('button')) return; // Save/Delete buttons handle their own keys
       const card = e.target.closest('[data-switch-email]');
       if (!card) return;
       e.preventDefault();

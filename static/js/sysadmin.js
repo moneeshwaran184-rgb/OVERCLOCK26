@@ -86,11 +86,15 @@ const SysAdmin = {
           </p>
         </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-end">
+        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-end gap-2">
           <button onclick="SysAdmin.openMemberModal('${m.user_id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold transition flex items-center gap-1">
             <i data-lucide="user-cog" class="w-3.5 h-3.5"></i>
             Edit Membership
           </button>
+          ${m.user_id === (window.API?._currentUser?.id) ? '' : `<button onclick="SysAdmin.deleteAccount('${m.user_id}')" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-semibold transition flex items-center gap-1 border border-rose-200 dark:border-rose-800">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            Delete account
+          </button>`}
         </div>
       </div>
     `).join('');
@@ -183,6 +187,33 @@ const SysAdmin = {
       if (window.App) window.App.showToast(err.message, 'error');
     } finally {
       if (submitBtn) submitBtn.disabled = false;
+    }
+  },
+
+  async deleteAccount(userId) {
+    const member = this.members.find(m => m.user_id === userId);
+    const name = member?.full_name || userId;
+    const role = member?.role || 'unknown';
+    const confirmed = window.confirm(
+      `Permanently delete the account for ${name} (${role})?\n\n` +
+      `This removes their login and all of their reports, messages, grievances,\n` +
+      `enrollments and personal data. Incidents and work orders are retained.\n\n` +
+      `This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    const submitBtns = document.querySelectorAll(`[onclick*="SysAdmin.deleteAccount('${userId}')"]`);
+    submitBtns.forEach(b => { b.disabled = true; });
+
+    try {
+      const result = await API.deleteAccount(userId);
+      if (window.App) window.App.showToast(`Account deleted: ${name}.`, 'success');
+      await this.loadData();
+    } catch (err) {
+      console.error('Delete account failed:', err);
+      if (window.App) window.App.showToast(err.message || 'Account deletion failed.', 'error');
+    } finally {
+      submitBtns.forEach(b => { b.disabled = false; });
     }
   },
 

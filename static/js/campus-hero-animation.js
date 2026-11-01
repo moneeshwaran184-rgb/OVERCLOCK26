@@ -1,6 +1,6 @@
 /**
  * CampusOps Full-Page Scroll-Driven Campus Dual-Photo Video Transition Animation Controller
- *
+ * 
  * Drives a seamless, high-definition full-viewport background animation from Photo 1 (Aerial Quad)
  * to Photo 2 (Historic Clock Tower) playing continuously across the entire landing page.
  */

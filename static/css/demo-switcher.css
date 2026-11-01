@@ -154,16 +154,22 @@
 
 .ds-check-ico  { color:#6366f1; flex-shrink:0; }
 
-.ds-rm-btn {
-  opacity:0; width:22px; height:22px; border-radius:6px;
-  border:none; background:transparent; color:#94a3b8; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-size:12px; flex-shrink:0;
-  transition:opacity .15s, background .15s, color .15s;
+.ds-card-actions {
+  display:flex; align-items:center; gap:6px; flex-shrink:0; margin-left:auto;
 }
-.ds-card:hover .ds-rm-btn { opacity:1; }
-.ds-rm-btn:hover { background:#fee2e2; color:#dc2626; }
-.dark .ds-rm-btn:hover { background:rgba(220,38,38,.15); color:#fb7185; }
+
+.ds-act {
+  border:1px solid #e2e8f0; background:#fff; color:#475569;
+  font-size:10.5px; font-weight:700; letter-spacing:.02em;
+  padding:4px 9px; border-radius:7px; cursor:pointer; line-height:1.25;
+  white-space:nowrap;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.dark .ds-act { background:#0f172a; border-color:#334155; color:#94a3b8; }
+.ds-act-save:hover { background:#eef2ff; border-color:#c7d2fe; color:#4f46e5; }
+.dark .ds-act-save:hover { background:rgba(99,102,241,.18); border-color:rgba(99,102,241,.45); color:#a5b4fc; }
+.ds-act-del:hover { background:#fee2e2; border-color:#fecaca; color:#dc2626; }
+.dark .ds-act-del:hover { background:rgba(220,38,38,.15); border-color:rgba(220,38,38,.4); color:#fb7185; }
 
 /* ── Role Badges ─────────────────────────────────────────────────── */
 .ds-badge {

@@ -650,6 +650,15 @@ const API = {
     return data;
   },
 
+  async deleteAccount(targetUserId) {
+    const { data, error } = await this.client.functions.invoke('campusops-delete-account', {
+      body: { target_user_id: targetUserId }
+    });
+    if (error) throw new Error(this.formatError(error));
+    if (data?.error) throw new Error(data.error);
+    return data;
+  },
+
   async setBudget({ p_college, p_department, p_name, p_amount, p_start, p_end, p_id = null }) {
     const { data, error } = await this.client.rpc('campusops_set_budget', {
       p_college,
