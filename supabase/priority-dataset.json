@@ -1,0 +1,178 @@
+{
+  "method": "Deterministic keyword rules, not a trained AI model",
+  "priorityLabels": {
+    "1": "Critical",
+    "2": "High",
+    "3": "Medium",
+    "4": "Low"
+  },
+  "defaultPriority": 3,
+  "rules": [
+    {
+      "id": "fire",
+      "priority": 1,
+      "pattern": "(^|[^a-z])(fire(?! (alarm|extinguisher|drill|exit))|flames|burning|smoke)([^a-z]|$)",
+      "reason": "Possible fire or smoke hazard.",
+      "examples": [
+        "Smoke coming from the switchboard",
+        "Flames near the generator"
+      ]
+    },
+    {
+      "id": "electric_hazard",
+      "priority": 1,
+      "pattern": "(^|[^a-z])(sparks?|sparking|electric shock|exposed (live )?wires?|live wire)([^a-z]|$)",
+      "reason": "Possible immediate electrical danger.",
+      "examples": [
+        "Exposed live wire beside the desk",
+        "Socket is sparking"
+      ]
+    },
+    {
+      "id": "gas",
+      "priority": 1,
+      "pattern": "(^|[^a-z])(gas leak|smell of gas)([^a-z]|$)",
+      "reason": "Possible gas leak.",
+      "examples": [
+        "Smell of gas near the workshop"
+      ]
+    },
+    {
+      "id": "structural",
+      "priority": 1,
+      "pattern": "(^|[^a-z])(ceiling collapse|collapsing|structural collapse)([^a-z]|$)",
+      "reason": "Possible structural danger.",
+      "examples": [
+        "The ceiling is collapsing"
+      ]
+    },
+    {
+      "id": "flood",
+      "priority": 1,
+      "pattern": "(^|[^a-z])(flooding|flooded|water near (electrical|electric)|water on (electrical|electric))([^a-z]|$)",
+      "reason": "Flooding or water near electricity.",
+      "examples": [
+        "Lab is flooded",
+        "Water near electrical equipment"
+      ]
+    },
+    {
+      "id": "blocked_exit",
+      "priority": 1,
+      "pattern": "(^|[^a-z])(blocked (fire |emergency )?exit|emergency exit blocked)([^a-z]|$)",
+      "reason": "An emergency exit may be blocked.",
+      "examples": [
+        "Blocked emergency exit in the hall"
+      ]
+    },
+    {
+      "id": "outage",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(power outage|no power|blackout)([^a-z]|$)",
+      "reason": "Loss of power affects service.",
+      "examples": [
+        "No power in the classroom"
+      ]
+    },
+    {
+      "id": "water_supply",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(burst pipe|pipe burst|no water|sewage overflow)([^a-z]|$)",
+      "reason": "Major water or sanitation disruption.",
+      "examples": [
+        "Burst pipe beside the washroom"
+      ]
+    },
+    {
+      "id": "network",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(network outage|internet outage|no internet|all computers offline)([^a-z]|$)",
+      "reason": "Network service disruption.",
+      "examples": [
+        "No internet in the computer lab"
+      ]
+    },
+    {
+      "id": "access",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(door (is )?stuck|locked inside|cannot open (the )?door)([^a-z]|$)",
+      "reason": "Access to a room is obstructed.",
+      "examples": [
+        "The classroom door is stuck"
+      ]
+    },
+    {
+      "id": "machinery",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(machine jammed|machinery stopped|lift stuck|elevator stuck)([^a-z]|$)",
+      "reason": "Mechanical service disruption.",
+      "examples": [
+        "Workshop machine jammed"
+      ]
+    },
+    {
+      "id": "safety_device",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(extinguisher (is )?empty|fire alarm (is )?faulty|fire alarm (is )?not working)([^a-z]|$)",
+      "reason": "Safety equipment requires prompt repair.",
+      "examples": [
+        "The fire alarm is not working"
+      ]
+    },
+    {
+      "id": "glass",
+      "priority": 2,
+      "pattern": "(^|[^a-z])(broken glass|broken stair|broken railing)([^a-z]|$)",
+      "reason": "Broken fittings may cause injury.",
+      "examples": [
+        "Broken glass near the window"
+      ]
+    },
+    {
+      "id": "leak",
+      "priority": 3,
+      "pattern": "(^|[^a-z])(leaking|water leak|dripping|tap leak)([^a-z]|$)",
+      "reason": "A localized leak needs maintenance.",
+      "examples": [
+        "Tap leaking in the washroom"
+      ]
+    },
+    {
+      "id": "device",
+      "priority": 3,
+      "pattern": "(^|[^a-z])(not working|faulty|broken|damaged)([^a-z]|$)",
+      "reason": "Equipment needs routine repair.",
+      "examples": [
+        "Projector not working",
+        "Broken desk in classroom"
+      ]
+    },
+    {
+      "id": "cleaning",
+      "priority": 3,
+      "pattern": "(^|[^a-z])(dirty|spill|waste|garbage|unclean)([^a-z]|$)",
+      "reason": "Cleaning or sanitation is needed.",
+      "examples": [
+        "Garbage near the classroom"
+      ]
+    },
+    {
+      "id": "cosmetic",
+      "priority": 4,
+      "pattern": "(^|[^a-z])(scratch|scratches|repaint|paint peeling|cosmetic)([^a-z]|$)",
+      "reason": "Cosmetic maintenance can be scheduled.",
+      "examples": [
+        "Paint peeling on the corridor wall"
+      ]
+    },
+    {
+      "id": "minor",
+      "priority": 4,
+      "pattern": "(^|[^a-z])(squeaky|loose label|faded sign)([^a-z]|$)",
+      "reason": "Minor maintenance can be scheduled.",
+      "examples": [
+        "Squeaky chair in the classroom"
+      ]
+    }
+  ]
+}

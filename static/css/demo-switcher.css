@@ -1,0 +1,366 @@
+/* =================================================================
+   CAMPUSOPS DEMO ACCOUNT SWITCHER
+   Styles for the avatar button, dropdown, modals, and all components.
+   ================================================================= */
+
+/* ── Screen-reader only (for legacy compat elements) ─────────────── */
+.ds-sr {
+  position:absolute; width:1px; height:1px; padding:0;
+  margin:-1px; overflow:hidden; clip:rect(0,0,0,0);
+  white-space:nowrap; border:0; pointer-events:none;
+}
+
+/* ── Avatar Button ───────────────────────────────────────────────── */
+.ds-avatar-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:3px 6px 3px 3px; border-radius:100px;
+  border:2px solid transparent; background:transparent;
+  cursor:pointer; outline:none;
+  transition:border-color .2s ease, background .2s ease;
+}
+.ds-avatar-btn:hover       { border-color:rgba(99,102,241,.3); background:rgba(99,102,241,.05); }
+.ds-avatar-btn.open        { border-color:rgba(99,102,241,.45); background:rgba(99,102,241,.08); }
+.ds-avatar-btn:focus-visible { box-shadow:0 0 0 3px rgba(99,102,241,.25); border-color:#6366f1; }
+
+/* ── Avatar Circles ──────────────────────────────────────────────── */
+.ds-av {
+  border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-weight:700; color:#fff;
+  flex-shrink:0; letter-spacing:.02em;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  user-select:none;
+}
+.ds-av-34 { width:34px; height:34px; font-size:13px; transition:transform .2s ease; }
+.ds-av-26 { width:26px; height:26px; font-size:10px; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+.ds-av-52 { width:52px; height:52px; font-size:20px; box-shadow:0 4px 14px rgba(0,0,0,.22); }
+.ds-avatar-btn:hover .ds-av-34 { transform:scale(1.06); }
+
+/* Online indicator dot */
+.ds-online-dot {
+  position:absolute; bottom:-2px; right:-2px;
+  width:10px; height:10px; border-radius:50%;
+  background:#22c55e; border:2px solid #fff;
+}
+.dark .ds-online-dot { border-color:#1e293b; }
+
+/* Chevron */
+.ds-chevron {
+  color:#64748b; flex-shrink:0; display:flex;
+  transition:transform .25s ease, color .2s ease;
+}
+.ds-avatar-btn.open .ds-chevron { transform:rotate(180deg); color:#6366f1; }
+
+/* ── Dropdown Panel ──────────────────────────────────────────────── */
+.ds-dropdown {
+  position:absolute; top:calc(100% + 10px); right:0;
+  width:348px; background:#fff; border-radius:20px;
+  box-shadow:0 20px 56px rgba(0,0,0,.14), 0 4px 16px rgba(0,0,0,.07);
+  border:1px solid rgba(226,232,240,.9); overflow:hidden;
+  z-index:1000; transform-origin:top right;
+}
+.ds-dropdown:not(.hidden)  { animation:dsOpen  .22s cubic-bezier(.16,1,.3,1) forwards; }
+.ds-dropdown.ds-closing    { animation:dsClose .18s cubic-bezier(.4,0,1,1)   forwards; }
+
+@keyframes dsOpen  { from{opacity:0;transform:scale(.9) translateY(-10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+@keyframes dsClose { from{opacity:1;transform:scale(1) translateY(0)} to{opacity:0;transform:scale(.93) translateY(-8px)} }
+
+.dark .ds-dropdown {
+  background:#1e293b; border-color:rgba(51,65,85,.9);
+  box-shadow:0 20px 56px rgba(0,0,0,.45), 0 4px 16px rgba(0,0,0,.3);
+}
+
+/* ── Dropdown Header ─────────────────────────────────────────────── */
+.ds-dd-header {
+  padding:16px 18px 13px;
+  background:linear-gradient(135deg,#6366f1 0%,#4f46e5 100%);
+  color:#fff;
+}
+.ds-dd-title { font-size:10px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; opacity:.8; margin-bottom:3px; }
+.ds-dd-sub   { font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px; }
+.ds-col-tag  { font-size:10px; padding:2px 9px; border-radius:20px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.3); font-weight:700; letter-spacing:.04em; }
+
+/* ── Search ──────────────────────────────────────────────────────── */
+.ds-search-wrap   { padding:11px 12px 8px; border-bottom:1px solid #f1f5f9; }
+.dark .ds-search-wrap { border-color:#334155; }
+.ds-search-inner  { position:relative; }
+.ds-search-ico    { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; }
+.ds-search-input  {
+  width:100%; padding:8px 12px 8px 34px; border-radius:12px;
+  border:1.5px solid #e2e8f0; background:#f8fafc;
+  font-size:12px; color:#1e293b; outline:none; box-sizing:border-box;
+  transition:border-color .2s, background .2s, box-shadow .2s;
+}
+.ds-search-input::placeholder { color:#94a3b8; }
+.ds-search-input:focus { border-color:#6366f1; background:#fff; box-shadow:0 0 0 3px rgba(99,102,241,.11); }
+.dark .ds-search-input { background:#0f172a; border-color:#334155; color:#e2e8f0; }
+.dark .ds-search-input:focus { background:#0f172a; box-shadow:0 0 0 3px rgba(99,102,241,.2); }
+
+/* ── Filter Chips ────────────────────────────────────────────────── */
+.ds-filters { padding:8px 12px 6px; display:flex; gap:5px; flex-wrap:wrap; border-bottom:1px solid #f1f5f9; }
+.dark .ds-filters { border-color:#334155; }
+.ds-chip {
+  font-size:10px; font-weight:600; padding:3px 10px; border-radius:20px;
+  border:1.5px solid #e2e8f0; background:#f8fafc; color:#64748b;
+  cursor:pointer; white-space:nowrap;
+  transition:border-color .15s, color .15s, background .15s;
+}
+.ds-chip:hover  { border-color:#6366f1; color:#6366f1; background:#eef2ff; }
+.ds-chip.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+.dark .ds-chip  { border-color:#334155; background:#1e293b; color:#94a3b8; }
+.dark .ds-chip:hover  { border-color:#6366f1; color:#818cf8; background:rgba(99,102,241,.12); }
+.dark .ds-chip.active { background:#6366f1; border-color:#6366f1; color:#fff; }
+
+/* ── Accounts Scroll Area ────────────────────────────────────────── */
+.ds-scroll { max-height:300px; overflow-y:auto; overscroll-behavior:contain; }
+.ds-scroll::-webkit-scrollbar       { width:4px; }
+.ds-scroll::-webkit-scrollbar-track { background:transparent; }
+.ds-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+.dark .ds-scroll::-webkit-scrollbar-thumb { background:#334155; }
+
+.ds-section-lbl {
+  padding:8px 16px 3px; font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.08em; color:#94a3b8;
+  display:flex; align-items:center; gap:6px;
+}
+.dark .ds-section-lbl { color:#64748b; }
+
+.ds-count-badge {
+  min-width:16px; height:16px; padding:0 4px; border-radius:8px;
+  background:#6366f1; color:#fff; font-size:9px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+
+/* ── Account Card ────────────────────────────────────────────────── */
+.ds-card {
+  display:flex; align-items:center; gap:11px;
+  padding:9px 14px; cursor:pointer; position:relative;
+  border-left:3px solid transparent;
+  transition:background .15s ease;
+}
+.ds-card:hover  { background:#f8fafc; }
+.ds-card.active {
+  background:linear-gradient(90deg,rgba(99,102,241,.06) 0%,transparent 100%);
+  border-left-color:#6366f1;
+}
+.dark .ds-card:hover  { background:#0f172a; }
+.dark .ds-card.active { background:linear-gradient(90deg,rgba(99,102,241,.12) 0%,transparent 100%); }
+
+.ds-card-info   { flex:1; min-width:0; }
+.ds-card-name   { font-size:13px; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ds-card-email  { font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.ds-card-meta   { display:flex; align-items:center; gap:5px; margin-top:3px; flex-wrap:wrap; }
+.dark .ds-card-name  { color:#e2e8f0; }
+.dark .ds-card-email { color:#475569; }
+
+.ds-check-ico  { color:#6366f1; flex-shrink:0; }
+
+.ds-card-actions {
+  display:flex; align-items:center; gap:6px; flex-shrink:0; margin-left:auto;
+}
+
+.ds-act {
+  border:1px solid #e2e8f0; background:#fff; color:#475569;
+  font-size:10.5px; font-weight:700; letter-spacing:.02em;
+  padding:4px 9px; border-radius:7px; cursor:pointer; line-height:1.25;
+  white-space:nowrap;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.dark .ds-act { background:#0f172a; border-color:#334155; color:#94a3b8; }
+.ds-act-save:hover { background:#eef2ff; border-color:#c7d2fe; color:#4f46e5; }
+.dark .ds-act-save:hover { background:rgba(99,102,241,.18); border-color:rgba(99,102,241,.45); color:#a5b4fc; }
+.ds-act-del:hover { background:#fee2e2; border-color:#fecaca; color:#dc2626; }
+.dark .ds-act-del:hover { background:rgba(220,38,38,.15); border-color:rgba(220,38,38,.4); color:#fb7185; }
+
+/* ── Role Badges ─────────────────────────────────────────────────── */
+.ds-badge {
+  font-size:9px; font-weight:700; padding:2px 7px;
+  border-radius:10px; border:1px solid; letter-spacing:.03em;
+  text-transform:uppercase; white-space:nowrap; display:inline-block;
+}
+.ds-r-student              { background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; }
+.ds-r-faculty              { background:#ecfdf5; color:#059669; border-color:#a7f3d0; }
+.ds-r-technician           { background:#fffbeb; color:#d97706; border-color:#fde68a; }
+.ds-r-department_manager   { background:#faf5ff; color:#7c3aed; border-color:#ddd6fe; }
+.ds-r-facilities_admin     { background:#fff1f2; color:#e11d48; border-color:#fecdd3; }
+.ds-r-report_admin         { background:#ecfeff; color:#0891b2; border-color:#a5f3fc; }
+.ds-r-procurement_approver { background:#eff6ff; color:#2563eb; border-color:#bfdbfe; }
+.ds-r-system_admin         { background:#1e293b; color:#f8fafc; border-color:#334155; }
+.ds-r-member               { background:#f8fafc; color:#64748b; border-color:#e2e8f0; }
+
+.dark .ds-r-student              { background:rgba(79,70,229,.15); color:#818cf8; border-color:rgba(79,70,229,.3); }
+.dark .ds-r-faculty              { background:rgba(5,150,105,.15); color:#34d399; border-color:rgba(5,150,105,.3); }
+.dark .ds-r-technician           { background:rgba(217,119,6,.15); color:#fbbf24; border-color:rgba(217,119,6,.3); }
+.dark .ds-r-department_manager   { background:rgba(124,58,237,.15); color:#a78bfa; border-color:rgba(124,58,237,.3); }
+.dark .ds-r-facilities_admin     { background:rgba(225,29,72,.15); color:#fb7185; border-color:rgba(225,29,72,.3); }
+.dark .ds-r-report_admin         { background:rgba(8,145,178,.15); color:#22d3ee; border-color:rgba(8,145,178,.3); }
+.dark .ds-r-procurement_approver { background:rgba(37,99,235,.15); color:#60a5fa; border-color:rgba(37,99,235,.3); }
+.dark .ds-r-system_admin         { background:rgba(30,41,59,.8); color:#94a3b8; border-color:#475569; }
+
+.ds-col-chip { font-size:9px; font-weight:600; color:#94a3b8; padding:1px 5px; background:#f1f5f9; border-radius:5px; }
+.dark .ds-col-chip { background:#0f172a; color:#64748b; }
+
+/* ── Empty State ─────────────────────────────────────────────────── */
+.ds-empty       { text-align:center; padding:28px 20px; }
+.ds-empty-ico   { font-size:30px; margin-bottom:8px; line-height:1; }
+.ds-empty-ttl   { font-size:13px; font-weight:600; color:#64748b; margin-bottom:4px; }
+.ds-empty-body  { font-size:11px; color:#94a3b8; line-height:1.55; }
+.ds-empty-body strong { color:#64748b; }
+.dark .ds-empty-ttl  { color:#94a3b8; }
+.dark .ds-empty-body { color:#64748b; }
+
+/* ── Dropdown Footer ─────────────────────────────────────────────── */
+.ds-footer { padding:8px 12px; border-top:1px solid #f1f5f9; display:flex; flex-direction:column; gap:2px; }
+.dark .ds-footer { border-color:#334155; }
+.ds-foot-btn {
+  display:flex; align-items:center; gap:10px; padding:9px 12px;
+  border-radius:12px; border:none; background:transparent;
+  cursor:pointer; font-size:12px; font-weight:600; color:#475569;
+  text-align:left; width:100%;
+  transition:background .15s ease, color .15s ease;
+}
+.ds-foot-btn:hover        { background:#f8fafc; color:#1e293b; }
+.ds-foot-btn.danger:hover { background:#fff1f2; color:#e11d48; }
+.dark .ds-foot-btn              { color:#94a3b8; }
+.dark .ds-foot-btn:hover        { background:#0f172a; color:#e2e8f0; }
+.dark .ds-foot-btn.danger:hover { background:rgba(225,29,72,.1); color:#fb7185; }
+
+/* ── Modal Overlay ───────────────────────────────────────────────── */
+.ds-overlay {
+  position:fixed; inset:0; background:rgba(15,23,42,.55);
+  backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+  z-index:9999; display:flex; align-items:center; justify-content:center;
+  padding:20px; animation:dsFadeIn .2s ease;
+}
+.ds-overlay.hidden { display:none; }
+@keyframes dsFadeIn { from{opacity:0} to{opacity:1} }
+
+/* ── Modal Panel ─────────────────────────────────────────────────── */
+.ds-modal {
+  background:#fff; border-radius:24px;
+  width:100%; max-width:430px; overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,.22);
+  animation:dsModalIn .26s cubic-bezier(.16,1,.3,1);
+}
+.dark .ds-modal { background:#1e293b; box-shadow:0 32px 80px rgba(0,0,0,.55); }
+@keyframes dsModalIn { from{opacity:0;transform:scale(.9) translateY(18px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+.ds-mhdr {
+  padding:26px 28px 18px; position:relative; color:#fff;
+}
+.ds-mhdr-ttl { font-size:19px; font-weight:800; margin-bottom:3px; }
+.ds-mhdr-sub { font-size:12px; opacity:.8; }
+.ds-mclose {
+  position:absolute; top:14px; right:14px;
+  width:30px; height:30px; border-radius:9px;
+  border:none; background:rgba(255,255,255,.2); color:#fff;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:15px; transition:background .15s;
+}
+.ds-mclose:hover { background:rgba(255,255,255,.32); }
+
+.ds-mbody { padding:20px 28px 28px; }
+
+/* Account preview block in modal */
+.ds-preview {
+  display:flex; align-items:center; gap:14px;
+  padding-bottom:18px; border-bottom:1px solid #f1f5f9;
+  margin-bottom:20px;
+}
+.dark .ds-preview { border-color:#334155; }
+.ds-prev-info   { flex:1; min-width:0; }
+.ds-prev-name   { font-size:16px; font-weight:700; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ds-prev-email  { font-size:12px; color:#64748b; margin-top:2px; }
+.ds-prev-meta   { display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
+.dark .ds-prev-name { color:#e2e8f0; }
+
+/* ── Form Inputs ─────────────────────────────────────────────────── */
+.ds-input-group { margin-bottom:16px; }
+.ds-lbl {
+  display:block; font-size:11px; font-weight:700; color:#475569;
+  margin-bottom:6px; letter-spacing:.03em; text-transform:uppercase;
+}
+.dark .ds-lbl { color:#94a3b8; }
+.ds-inp-wrap { position:relative; }
+.ds-inp {
+  width:100%; padding:11px 44px 11px 14px; border-radius:13px;
+  border:1.5px solid #e2e8f0; background:#f8fafc;
+  font-size:14px; color:#1e293b; outline:none; box-sizing:border-box;
+  transition:border-color .2s, background .2s, box-shadow .2s;
+  font-family:inherit;
+}
+.ds-inp:focus       { border-color:#6366f1; background:#fff; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+.ds-inp[readonly]   { background:#f1f5f9; color:#64748b; cursor:default; }
+.ds-inp::placeholder { color:#94a3b8; }
+.dark .ds-inp         { background:#0f172a; border-color:#334155; color:#e2e8f0; }
+.dark .ds-inp:focus   { background:#0f172a; box-shadow:0 0 0 3px rgba(99,102,241,.2); }
+.dark .ds-inp[readonly] { background:#1e293b; color:#64748b; }
+.dark .ds-inp::placeholder { color:#475569; }
+
+.ds-eye {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:#94a3b8; cursor:pointer;
+  padding:4px; border-radius:7px; display:flex; align-items:center;
+  transition:color .15s; flex-shrink:0;
+}
+.ds-eye:hover { color:#6366f1; }
+
+/* ── Error Message ───────────────────────────────────────────────── */
+.ds-err {
+  padding:10px 14px; border-radius:12px;
+  background:#fff1f2; border:1px solid #fecdd3;
+  color:#e11d48; font-size:12px; font-weight:500;
+  margin-bottom:14px; display:none; align-items:center; gap:8px;
+  line-height:1.4;
+}
+.ds-err.show { display:flex; }
+.dark .ds-err { background:rgba(225,29,72,.1); border-color:rgba(225,29,72,.28); color:#fb7185; }
+
+/* ── Info Note ───────────────────────────────────────────────────── */
+.ds-note {
+  font-size:11px; color:#94a3b8; line-height:1.6; margin-bottom:16px;
+  padding:10px 13px; background:#f8fafc;
+  border-radius:11px; border:1px solid #f1f5f9;
+}
+.dark .ds-note { background:#0f172a; border-color:#1e293b; color:#64748b; }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.ds-btn-row { display:flex; gap:10px; margin-top:4px; }
+.ds-btn-p {
+  flex:1; padding:13px 20px; border-radius:14px; border:none;
+  font-size:14px; font-weight:700; color:#fff; cursor:pointer;
+  transition:transform .2s ease, box-shadow .2s ease, opacity .2s;
+  font-family:inherit;
+}
+.ds-btn-p:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 24px rgba(99,102,241,.3); }
+.ds-btn-p:active:not(:disabled) { transform:translateY(0); }
+.ds-btn-p:disabled { opacity:.65; cursor:not-allowed; }
+
+.ds-btn-s {
+  padding:11px 18px; border-radius:13px;
+  border:1.5px solid #e2e8f0; background:transparent;
+  font-size:13px; font-weight:600; color:#64748b;
+  cursor:pointer; transition:border-color .15s, background .15s, color .15s;
+  font-family:inherit; white-space:nowrap;
+}
+.ds-btn-s:hover { border-color:#cbd5e1; background:#f8fafc; color:#1e293b; }
+.dark .ds-btn-s       { border-color:#334155; color:#94a3b8; }
+.dark .ds-btn-s:hover { background:#0f172a; border-color:#475569; color:#e2e8f0; }
+
+/* ── Loading Spinner ─────────────────────────────────────────────── */
+@keyframes dsSpin { to{transform:rotate(360deg)} }
+.ds-spin {
+  display:inline-block; width:14px; height:14px;
+  border:2.5px solid rgba(255,255,255,.3); border-top-color:#fff;
+  border-radius:50%; animation:dsSpin .65s linear infinite;
+  vertical-align:middle; margin-right:7px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width:520px) {
+  .ds-dropdown { width:calc(100vw - 20px); right:-46px; }
+}
+@media (max-width:400px) {
+  .ds-modal    { border-radius:18px; }
+  .ds-mbody    { padding:16px 20px 24px; }
+  .ds-mhdr     { padding:22px 20px 16px; }
+}
