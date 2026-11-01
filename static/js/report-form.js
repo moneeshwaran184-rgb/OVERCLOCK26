@@ -182,6 +182,7 @@ const ReportForm = {
       if (!await ReportAI.review()) return;
       const result = await API.submitReport({
         p_assessment: ReportAI.result.assessment_id,
+        p_choice: ReportAI.choice,p_target: ReportAI.target,
         p_college: member.college_id,
         p_campus: campusId,
         p_department: departmentId,
@@ -227,7 +228,7 @@ const ReportForm = {
   },
 
   resetForm() {
-    ReportAI.signature="";ReportAI.result=null;document.getElementById("reportAIReview")?.remove();
+    ReportAI.signature="";ReportAI.result=null;ReportAI.clarificationAssessment=null;document.getElementById("reportAIReview")?.remove();
     const form = document.getElementById('issueReportForm');
     if (form) form.reset();
     ReportPhotos.clearPreview();

@@ -245,8 +245,8 @@ details[open] > * {
   ::-webkit-scrollbar-track { background: #0f172a !important; }
   ::-webkit-scrollbar-thumb { background: #334155 !important; }
   ::-webkit-scrollbar-thumb:hover { background: #475569 !important; }
-  header { background-color: rgba(15, 23, 42, 0.95) !important; border-color: #1e293b !important; }
-  header span.text-slate-900 { color: #f8fafc !important; }
+  header#siteTopbar { background-color: rgba(15, 23, 42, 0.95) !important; border-color: #1e293b !important; }
+  header#siteTopbar span.text-slate-900 { color: #f8fafc !important; }
   nav button[data-tab-target], #mobileNav button[data-tab-target] { color: #94a3b8 !important; }
   nav button[data-tab-target]:hover, #mobileNav button[data-tab-target]:hover { background-color: #1e293b !important; color: #f8fafc !important; }
   nav button[data-tab-target].bg-indigo-50, #mobileNav button[data-tab-target].bg-indigo-50 { background-color: rgba(99, 102, 241, 0.18) !important; color: #818cf8 !important; }
@@ -329,8 +329,8 @@ details[open] > * {
 /* Explicit class‑based dark rules for synchronous DOM toggle */
 html.dark { --bg-slate: #0b0f19; }
 html.dark body { background-color: #0b0f19 !important; color: #f1f5f9 !important; }
-html.dark header { background-color: rgba(15, 23, 42, 0.95) !important; border-color: #1e293b !important; }
-html.dark header span.text-slate-900 { color: #f8fafc !important; }
+html.dark header#siteTopbar { background-color: rgba(15, 23, 42, 0.95) !important; border-color: #1e293b !important; }
+html.dark header#siteTopbar span.text-slate-900 { color: #f8fafc !important; }
 html.dark nav button[data-tab-target], html.dark #mobileNav button[data-tab-target] { color: #94a3b8 !important; }
 html.dark nav button[data-tab-target]:hover, html.dark #mobileNav button[data-tab-target]:hover { background-color: #1e293b !important; color: #f8fafc !important; }
 html.dark nav button[data-tab-target].bg-indigo-50, html.dark #mobileNav button[data-tab-target].bg-indigo-50 { background-color: rgba(99, 102, 241, 0.18) !important; color: #818cf8 !important; }
@@ -555,11 +555,11 @@ body {
   }
 
   /* Header & Navigation */
-  header {
+  header#siteTopbar {
     background-color: rgba(15, 23, 42, 0.95) !important;
     border-color: #1e293b !important;
   }
-  header span.text-slate-900 {
+  header#siteTopbar span.text-slate-900 {
     color: #f8fafc !important;
   }
   nav button[data-tab-target],
@@ -774,11 +774,11 @@ html.dark body {
   background-color: #0b0f19 !important;
   color: #f1f5f9 !important;
 }
-html.dark header {
+html.dark header#siteTopbar {
   background-color: rgba(15, 23, 42, 0.95) !important;
   border-color: #1e293b !important;
 }
-html.dark header span.text-slate-900 {
+html.dark header#siteTopbar span.text-slate-900 {
   color: #f8fafc !important;
 }
 html.dark nav button[data-tab-target],

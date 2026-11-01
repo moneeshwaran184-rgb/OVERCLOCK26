@@ -41,13 +41,11 @@ const App = {
       this.liveRefreshBusy = true;
       const role = API._currentMember.role;
       try {
-        if (this.currentTab === 'dashboard' && role === 'report_admin') await ReportAdmin.refresh();
         if (this.currentTab === 'workorders' && role === 'technician') await WorkOrders.loadData();
         if (this.currentTab === 'dashboard' && role === 'technician') await Dashboard.renderRoleDashboard();
         if (this.currentTab === 'approvals' && ['department_manager','facilities_admin'].includes(role)) await Approvals.loadData();
         if (['faculty','facilities_admin','department_manager'].includes(role) && ['dashboard','bookings'].includes(this.currentTab) && window.RoomAvailability) await RoomAvailability.refreshVisible();
         if (window.Notifications) await Notifications.loadData();
-        if (this.currentTab === 'myreports' && role === 'student') await MyReports.load();
       } catch (error) { console.warn('Live refresh failed:', error.message); }
       finally { this.liveRefreshBusy = false; }
     }, 10000);
@@ -107,6 +105,9 @@ const App = {
     window.location.hash = tabName;
 
     // Toggle content visibility
+    if (tabName !== 'dashboard' && window.CampusHeroAnimation) {
+      window.CampusHeroAnimation.destroy();
+    }
     document.querySelectorAll('.tab-section').forEach(sec => {
       sec.classList.add('hidden');
     });
@@ -137,7 +138,7 @@ const App = {
 
     try {
     // Trigger tab specific data loads
-    if (tabName === 'dashboard' && window.Dashboard) {
+    if(tabName==='studenthelp'){await StudentHelp.load();} else if(tabName==='grievances'){await StudentHelp.admin();} else if(tabName==='emailintake'){await EmailIntake.load();} else if (tabName === 'dashboard' && window.Dashboard) {
       await window.Dashboard.renderRoleDashboard();
     } else if (tabName === 'report' && window.ReportForm) {
       await window.ReportForm.loadReferenceData();
@@ -185,15 +186,15 @@ const App = {
 
     switch (role) {
       case 'report_admin':
-        return ['dashboard','notifications'].includes(tab);
+        return ['dashboard','emailintake','grievances','notifications'].includes(tab);
       case 'student':
-        return ['dashboard', 'report', 'myreports', 'campusreports', 'notifications'].includes(tab);
+        return ['dashboard', 'report', 'myreports', 'campusreports', 'studenthelp', 'notifications'].includes(tab);
       case 'faculty':
         return ['dashboard', 'bookings', 'notifications'].includes(tab);
       case 'technician':
         return ['dashboard', 'workorders', 'notifications'].includes(tab);
       case 'department_manager':
-        return ['dashboard', 'operations', 'approvals', 'report', 'analytics', 'notifications'].includes(tab);
+        return ['dashboard', 'inventory', 'operations', 'approvals', 'report', 'analytics', 'notifications'].includes(tab);
       case 'facilities_admin':
         return ['dashboard', 'rooms', 'operations', 'workorders', 'inventory', 'bookings', 'approvals', 'analytics', 'notifications'].includes(tab);
       case 'procurement_approver':
@@ -302,7 +303,7 @@ const App = {
         this.authRefreshTimer = setTimeout(async () => {
           try {
             await this.checkAuthState();
-            if (event === 'SIGNED_OUT') await this.switchTab('dashboard');
+            if (event === 'SIGNED_OUT') { window.StudentHelp?.reset(); await this.switchTab('dashboard'); }
           } catch (error) {
             this.showToast(error.message || 'Unable to refresh your session.', 'error');
           }
@@ -406,6 +407,8 @@ const App = {
       ],
       report_admin: [
         { id: 'dashboard', label: 'Student Reports', icon: 'clipboard-list' },
+          { id: 'emailintake', label: 'Email Intake', icon: 'mail' },
+        { id: 'grievances', label: 'Grievance Redressal', icon: 'message-square' },
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       student: [
@@ -413,6 +416,7 @@ const App = {
         { id: 'report', label: 'Submit Report', icon: 'plus-circle' },
         { id: 'myreports', label: 'My Reports', icon: 'list' },
         { id: 'campusreports', label: 'Campus Reports', icon: 'users' },
+        { id: 'studenthelp', label: 'AI Help & Grievances', icon: 'message-circle' },
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       faculty: [
@@ -426,6 +430,7 @@ const App = {
         { id: 'notifications', label: 'Notifications', icon: 'bell' }
       ],
       department_manager: [
+        { id: 'inventory', label: 'Inventory', icon: 'package' },
         { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid' },
         { id: 'operations', label: 'Incident Queue', icon: 'alert-triangle' },
         { id: 'approvals', label: 'Approvals', icon: 'file-check' },

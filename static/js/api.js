@@ -384,9 +384,9 @@ const API = {
   },
 
   // ================= WORKFLOW RPC FUNCTIONS =================
-  async submitReport({p_assessment}) {
+  async submitReport({p_assessment,p_choice=null,p_target=null}) {
     if(!p_assessment)throw new Error('Complete the AI review first.');
-    const {data,error}=await this.client.rpc('campusops_submit_ai_report',{p_assessment});
+    const {data,error}=await this.client.rpc('campusops_submit_ai_report',{p_assessment,p_choice,p_target});
     if(error)throw new Error(this.formatError(error));return data;
   },
 
